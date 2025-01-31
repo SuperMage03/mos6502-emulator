@@ -16,10 +16,3 @@ bool BUS::writeBusData(const uint16_t& address, const uint8_t& data) {
     }
     return false;
 }
-
-uint8_t* BUS::getPhysicalMemoryAddress(const uint16_t& virtual_address) {
-    if (virtual_address < 0x2000) {
-        return wram_.getPhysicalMemoryAddress(virtual_address & ~(0b11 << 11));
-    }
-    return nullptr;
-}

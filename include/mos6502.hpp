@@ -43,10 +43,9 @@ private:
     uint8_t instruction_cycle_remaining_; // Cycles remaining for the current instruction to complete
     
     // Variables that emulates the data carried on a data-path
-    uint8_t instruction_operand_data_;
-    uint16_t data_memory_unit_address_data_;
-    int8_t relative_addressing_data_;
-    uint8_t* instruction_operand_physical_memory_address_;
+    uint8_t operand_data_;
+    uint16_t operand_data_address_;
+    int8_t relative_addressing_offset_;
 
     union {
         uint8_t RAW_VALUE;
@@ -183,13 +182,6 @@ public:
     void runCycle();
 
     /**
-    * @brief  Output the current CPU state
-    * @param  out: The output stream
-    * @return None
-    */
-    void outputCurrentState(std::ostream &out) const;
-
-    /**
     * @brief  Reads 1 byte of data at given memory address
     * @param  address: The memory address to read
     * @return Data read at address
@@ -205,11 +197,18 @@ public:
     bool writeMemory(const uint16_t& address, const uint8_t& data);
 
     /**
-    * @brief  returns the physical memory address of the virtual memory address
-    * @param  virtual_address: The virtual memory address
-    * @return Physical memory address corresponding to the virtual memory address
+    * @brief  Fetches the operand data depending on the addressing mode
+    * @param  None
+    * @return None
     */
-    uint8_t* getPhysicalMemoryAddress(const uint16_t& virtual_address);
+    void fetchOperandData();
+
+    /**
+    * @brief  Output the current CPU state
+    * @param  out: The output stream
+    * @return None
+    */
+    void outputCurrentState(std::ostream &out) const;
 };
 
 #endif

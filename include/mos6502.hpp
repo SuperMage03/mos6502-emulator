@@ -43,10 +43,8 @@ private:
     uint8_t instruction_cycle_remaining_; // Cycles remaining for the current instruction to complete
     
     // Variables that emulates the data carried on a data-path
-    uint8_t instruction_operand_data_;
-    uint16_t data_memory_unit_address_data_;
-    int8_t relative_addressing_data_;
-    uint8_t* instruction_operand_physical_memory_address_;
+    uint8_t* operand_physical_address_;
+    int8_t relative_addressing_offset_;
 
     union {
         uint8_t RAW_VALUE;

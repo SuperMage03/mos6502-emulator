@@ -18,6 +18,6 @@ bool RAM::write(const uint16_t& address, const uint8_t& data) {
     return true;
 }
 
-uint8_t* RAM::getPhysicalMemoryAddress(const uint16_t& virtual_address) {
-    return &memory_block_[virtual_address];
+uint8_t& RAM::getReferenceToMemory(const uint16_t& virtual_address) {
+    return memory_block_[virtual_address];
 }

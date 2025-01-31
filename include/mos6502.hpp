@@ -1,12 +1,16 @@
 #ifndef _MOS6502_HPP_
 #define _MOS6502_HPP_
-
+// Standard Library Headers
 #include <cstdint>
 #include <ostream>
 #include <unordered_map>
+#include <variant>
 
 #define MOS6502_CLOCK_SPEED 1.789773 // In MHz
 #define MOS6502_CLOCK_PERIOD 558.73007 // In nanoseconds per cycle
+
+// Forward Delares BUS class
+class BUS;
 
 class MOS6502 {
 public:
@@ -27,25 +31,30 @@ public:
     };
 
 private:
+    // Helper class for mos6502 address pointer
+    class MOS6502Ptr {
+    public:
+        enum class Register {
+            ACCUMULATOR,
+        };
+    private:
+        std::variant<uint16_t, Register> address;
+    public:
+        MOS6502Ptr(const uint16_t& virtual_address);
+        MOS6502Ptr(const Register& target_register);
+        void operator=(const uint16_t& virtual_address);
+        void operator=(const Register& target_register);
+        uint8_t& dereference(MOS6502& cpu);
+    };
+
+    BUS* bus;
+
     // MOS6502 Registers
     uint16_t program_counter_;
     uint8_t stack_ptr_;
     uint8_t accumulator_;
     uint8_t x_reg_;
     uint8_t y_reg_;
-
-    // Emulator Variables
-    uint64_t total_cycle_ran_;
-
-    // Variables needed for fetch->decode->execute cycle
-    const Instruction* instruction_; // Current fetched instruction
-    uint8_t instruction_opcode_; // Current fetched instruction's opcode
-    uint8_t instruction_cycle_remaining_; // Cycles remaining for the current instruction to complete
-    
-    // Variables that emulates the data carried on a data-path
-    uint8_t* operand_physical_address_;
-    int8_t relative_addressing_offset_;
-    uint16_t indirect_addressing_data_;
 
     union {
         uint8_t RAW_VALUE;
@@ -60,6 +69,18 @@ private:
             uint8_t NEGATIVE : 1;
         };
     } processor_status_;
+
+    // Emulator Variables
+    uint64_t total_cycle_ran_;
+
+    // Variables needed for fetch->decode->execute cycle
+    const Instruction* instruction_; // Current fetched instruction
+    uint8_t instruction_opcode_; // Current fetched instruction's opcode
+    uint8_t instruction_cycle_remaining_; // Cycles remaining for the current instruction to complete
+    
+    // Variables that emulates the data carried on a data-path
+    MOS6502Ptr operand_address_;
+    int8_t relative_addressing_offset_;
 
     /**
     * @brief  Executes ADC Instruction (Accumulator = Accumulator + fetched operand + Carry)
@@ -182,6 +203,13 @@ public:
     MOS6502();
 
     /**
+    * @brief  Connects CPU to BUS
+    * @param  None
+    * @return None
+    */
+    void connectBUS(BUS* target_bus);
+
+    /**
     * @brief  Run 1 cycle of the CPU
     * @param  None
     * @return None
@@ -211,11 +239,11 @@ public:
     bool writeMemory(const uint16_t& address, const uint8_t& data);
 
     /**
-    * @brief  returns the physical memory address of the virtual memory address
+    * @brief  returns a reference of the memory at the virtual memory address
     * @param  virtual_address: The virtual memory address
-    * @return Physical memory address corresponding to the virtual memory address
+    * @return a reference of the memory at the virtual memory address
     */
-    uint8_t* getPhysicalMemoryAddress(const uint16_t& virtual_address);
+    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 };
 
 #endif

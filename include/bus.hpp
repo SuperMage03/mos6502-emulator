@@ -1,9 +1,8 @@
 #ifndef _BUS_HPP_
 #define _BUS_HPP_
-
+// Stardard Library Headers
 #include <cstdint>
-#include <unordered_map>
-
+// Project Headers
 #include "mos6502.hpp"
 #include "ram.hpp"
 
@@ -18,11 +17,11 @@ public:
     bool writeBusData(const uint16_t& address, const uint8_t& data);
 
     /**
-    * @brief  returns the physical memory address of the virtual BUS memory address
-    * @param  virtual_address: The virtual BUS memory address
-    * @return Physical memory address corresponding to the virtual BUS memory address
+    * @brief  returns a reference of the memory at the virtual memory address
+    * @param  virtual_address: The virtual memory address
+    * @return a reference of the memory at the virtual memory address
     */
-    uint8_t* getPhysicalMemoryAddress(const uint16_t& virtual_address);
+    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 };
 
 #endif

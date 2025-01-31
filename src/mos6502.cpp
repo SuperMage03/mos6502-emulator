@@ -1,5 +1,6 @@
 #include "mos6502.hpp"
 #include <cstdint>
+#include <sys/types.h>
 
 const std::unordered_map<uint8_t, MOS6502::Instruction> MOS6502::instruction_lookup_table = {
     {0x69, {MOS6502::ImmediateAddressingMode, MOS6502::ADC, 2}}
@@ -164,4 +165,37 @@ void MOS6502::AbsoluteAddressingMode(MOS6502& cpu) {
 
     uint16_t target_address = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte);
     cpu.operand_physical_address_ = cpu.getPhysicalMemoryAddress(target_address);
+}
+
+void MOS6502::AbsoluteXAddressingMode(MOS6502& cpu) {
+    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+
+    uint16_t target_address = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte) + static_cast<uint16_t>(cpu.x_reg_);
+    cpu.operand_physical_address_ = cpu.getPhysicalMemoryAddress(target_address);
+}
+
+void MOS6502::AbsoluteYAddressingMode(MOS6502& cpu) {
+    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+
+    uint16_t target_address = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte) + static_cast<uint16_t>(cpu.y_reg_);
+    cpu.operand_physical_address_ = cpu.getPhysicalMemoryAddress(target_address);
+}
+
+void MOS6502::IndirectAddressingMode(MOS6502& cpu) {
+    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+
+    uint16_t target_address = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte);
+    uint8_t indirect_address_low_byte = cpu.readMemory(target_address);
+    uint8_t indirect_address_high_byte = cpu.readMemory(target_address + 1);
+
+    cpu.indirect_addressing_data_ = (static_cast<uint16_t>(indirect_address_high_byte) << 8) + static_cast<uint16_t>(indirect_address_low_byte);
 }

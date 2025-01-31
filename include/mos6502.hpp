@@ -45,6 +45,7 @@ private:
     // Variables that emulates the data carried on a data-path
     uint8_t* operand_physical_address_;
     int8_t relative_addressing_offset_;
+    uint16_t indirect_addressing_data_;
 
     union {
         uint8_t RAW_VALUE;
@@ -166,6 +167,13 @@ private:
     * @return None
     */
     static void AbsoluteYAddressingMode(MOS6502& cpu);
+
+    /**
+    * @brief  Populate Emulated Data Path Variables Using Indirect Addressing Mode
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void IndirectAddressingMode(MOS6502& cpu);
 
 public:
     // Usage: Maps OPCODE to Instruction

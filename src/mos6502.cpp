@@ -1,7 +1,7 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
+#include <bitset>
 #include <cstdint>
-#include <utility>
 // Project Headers
 #include "bus.hpp"
 
@@ -77,13 +77,26 @@ void MOS6502::runCycle() {
 }
 
 void MOS6502::outputCurrentState(std::ostream &out) const {
-    for (uint8_t i = 0; i < 8; i++) {
-        bool cur_bit = processor_status_.RAW_VALUE & (1 << i);
-        out << cur_bit;
-    }
-    out << std::endl;
-    // Output total cycles elapsed
+    out << std::hex;
+    out << "Program Counter: " << program_counter_ << std::endl;
+    out << "Stack Pointer: " << static_cast<uint16_t>(stack_ptr_) << std::endl;
+    out << "Accumulator: " << static_cast<uint16_t>(accumulator_) << std::endl;
+    out << "X Register: " << static_cast<uint16_t>(x_reg_) << std::endl;
+    out << "Y Register: " << static_cast<uint16_t>(y_reg_) << std::endl;
+    out << "Status Flags: " << std::bitset<8>(processor_status_.RAW_VALUE) << std::endl;
     out << "Cycles Elapsed: " << total_cycle_ran_ << std::endl;
+}
+
+uint8_t MOS6502::readMemory(const uint16_t& address) const {
+    return bus->readBusData(address);
+}
+
+bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
+    return bus->writeBusData(address, data);
+}
+
+uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
+    return bus->getReferenceToMemory(virtual_address);
 }
 
 void MOS6502::ADC(MOS6502& cpu) {

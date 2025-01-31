@@ -149,7 +149,7 @@ void MOS6502::ASL(MOS6502& cpu) {
 
 void MOS6502::BCC(MOS6502& cpu) {
     if (!cpu.processor_status_.CARRY) {
-        uint8_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;
         // If branched to a new page we need to add 1 more cycle
@@ -162,7 +162,7 @@ void MOS6502::BCC(MOS6502& cpu) {
 
 void MOS6502::BCS(MOS6502& cpu) {
     if (cpu.processor_status_.CARRY) {
-        uint8_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;
         // If branched to a new page we need to add 1 more cycle
@@ -175,7 +175,7 @@ void MOS6502::BCS(MOS6502& cpu) {
 
 void MOS6502::BEQ(MOS6502& cpu) {
     if (cpu.processor_status_.ZERO) {
-        uint8_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;
         // If branched to a new page we need to add 1 more cycle

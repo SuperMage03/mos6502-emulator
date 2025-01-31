@@ -253,6 +253,11 @@ void MOS6502::IndirectAddressingMode(MOS6502& cpu) {
     uint16_t indirect_address_low_byte = cpu.readMemory(target_address);
     uint16_t indirect_address_high_byte = cpu.readMemory(target_address + 1);
 
+    // Page Boundary Hardware Bug (page doesn't cross)
+    if (address_low_byte == 0x00FF) {
+        indirect_address_high_byte = cpu.readMemory(target_address & 0xFF00);
+    }
+
     cpu.operand_address_ = (indirect_address_high_byte << 8) | indirect_address_low_byte;
 }
 

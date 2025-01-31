@@ -2,7 +2,6 @@
 #define _BUS_HPP_
 
 #include <cstdint>
-#include <sys/types.h>
 #include <unordered_map>
 
 #include "mos6502.hpp"

@@ -1,6 +1,5 @@
 #include "mos6502.hpp"
 #include <cstdint>
-#include <sys/types.h>
 
 const std::unordered_map<uint8_t, MOS6502::Instruction> MOS6502::instruction_lookup_table = {
     {0x69, {MOS6502::ImmediateAddressingMode, MOS6502::ADC, 2}}

@@ -7,30 +7,46 @@
 
 // ------------------------ MOS6502 Pointer Class ------------------------------
 
-MOS6502::MOS6502Ptr::MOS6502Ptr(const uint16_t& virtual_address): 
-    address{std::in_place_type<uint16_t>, virtual_address} {}
+MOS6502::Pointer::Pointer(MOS6502& cpu, const uint16_t& virtual_address): 
+    cpu_{cpu}, location_to_point{std::in_place_type<uint16_t>, virtual_address} {}
 
-MOS6502::MOS6502Ptr::MOS6502Ptr(const MOS6502::MOS6502Ptr::Register& target_register):
-    address{std::in_place_type<MOS6502::MOS6502Ptr::Register>, target_register} {}
+MOS6502::Pointer::Pointer(MOS6502& cpu, const MOS6502::Pointer::Register& target_register): 
+    cpu_{cpu}, location_to_point{std::in_place_type<MOS6502::Pointer::Register>, target_register} {}
 
-void MOS6502::MOS6502Ptr::operator=(const uint16_t& virtual_address) {
-    address = virtual_address;
+void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
+    location_to_point = virtual_address;
 }
 
-void MOS6502::MOS6502Ptr::operator=(const MOS6502::MOS6502Ptr::Register& target_register) {
-    address = target_register;
+void MOS6502::Pointer::operator=(const MOS6502::Pointer::Register& target_register) {
+    location_to_point = target_register;
 }
 
-uint8_t& MOS6502::MOS6502Ptr::dereference(MOS6502& cpu) {
+uint8_t& MOS6502::Pointer::operator*() const {
     // Holds Virtual Memory Address
-    if (std::holds_alternative<uint16_t>(address)) {
-        return cpu.getReferenceToMemory(std::get<uint16_t>(address));
+    if (std::holds_alternative<uint16_t>(location_to_point)) {
+        return cpu_.getReferenceToMemory(std::get<uint16_t>(location_to_point));
     }
     // Holds "Address" for Register
-    switch (std::get<MOS6502::MOS6502Ptr::Register>(address)) {
-        case MOS6502::MOS6502Ptr::Register::ACCUMULATOR:
-            return cpu.accumulator_;
+    switch (std::get<MOS6502::Pointer::Register>(location_to_point)) {
+        case MOS6502::Pointer::Register::ACCUMULATOR:
+            return cpu_.accumulator_;
     }
+}
+
+MOS6502::Pointer& MOS6502::Pointer::operator++() {
+    // Holds Virtual Memory Address
+    if (std::holds_alternative<uint16_t>(location_to_point)) {
+        std::get<uint16_t>(location_to_point)++;
+    }
+    return *this;
+}
+
+MOS6502::Pointer& MOS6502::Pointer::operator+=(const int16_t& increment) {
+    // Holds Virtual Memory Address
+    if (std::holds_alternative<uint16_t>(location_to_point)) {
+        std::get<uint16_t>(location_to_point) += increment;
+    }
+    return *this;
 }
 
 // ----------------------------- MOS6502 Class ---------------------------------
@@ -42,7 +58,7 @@ const std::unordered_map<uint8_t, MOS6502::Instruction> MOS6502::instruction_loo
 MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accumulator_(0), 
                     x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0}),
                     total_cycle_ran_(0), instruction_(nullptr), instruction_opcode_(0x00), 
-                    instruction_cycle_remaining_(0), operand_address_(0x00), 
+                    instruction_cycle_remaining_(0), operand_address_(*this, 0x00), 
                     relative_addressing_offset_(0) {}
 
 void MOS6502::connectBUS(BUS* target_bus) {
@@ -100,14 +116,14 @@ uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
 }
 
 void MOS6502::ADC(MOS6502& cpu) {
-    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(cpu.operand_address_.dereference(cpu)) + static_cast<uint16_t>(cpu.processor_status_.CARRY);
+    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.processor_status_.CARRY);
 
     cpu.processor_status_.ZERO = (result == 0);
     cpu.processor_status_.CARRY = (result > 0x00FF);
 
     // If the result sign was different from accumulator sign and accumulator sign is the same as the operand sign,
     //   then we have an overflow
-    if (((cpu.accumulator_ ^ result) & 0x80) && !((cpu.accumulator_ ^ cpu.operand_address_.dereference(cpu)) & 0x80)) {
+    if (((cpu.accumulator_ ^ result) & 0x80) && !((cpu.accumulator_ ^ *cpu.operand_address_) & 0x80)) {
         cpu.processor_status_.OVERFLOW_FLAG = 1;
     }
     else {
@@ -120,19 +136,19 @@ void MOS6502::ADC(MOS6502& cpu) {
 }
 
 void MOS6502::AND(MOS6502& cpu) {
-    cpu.accumulator_ &= cpu.operand_address_.dereference(cpu);
+    cpu.accumulator_ &= *cpu.operand_address_;
     cpu.processor_status_.ZERO = (cpu.accumulator_ == 0);
     cpu.processor_status_.NEGATIVE = ((cpu.accumulator_ & 0x80) > 0);
 }
 
 void MOS6502::ASL(MOS6502& cpu) {
-    uint8_t result = cpu.operand_address_.dereference(cpu) << 0x01;
+    uint8_t result = *cpu.operand_address_ << 0x01;
 
-    cpu.processor_status_.CARRY = ((cpu.operand_address_.dereference(cpu) & 0x80) > 0);
+    cpu.processor_status_.CARRY = ((*cpu.operand_address_ & 0x80) > 0);
     cpu.processor_status_.ZERO = (result == 0);
     cpu.processor_status_.NEGATIVE = ((result & 0x80) > 0);
 
-    cpu.operand_address_.dereference(cpu) = result;
+    *cpu.operand_address_ = result;
 }
 
 void MOS6502::BCC(MOS6502& cpu) {
@@ -175,7 +191,7 @@ void MOS6502::BEQ(MOS6502& cpu) {
 }
 
 void MOS6502::ImplicitAddressingMode(MOS6502& cpu) {
-    cpu.operand_address_ = MOS6502Ptr::Register::ACCUMULATOR;
+    cpu.operand_address_ = Pointer::Register::ACCUMULATOR;
 }
 
 void MOS6502::ImmediateAddressingMode(MOS6502& cpu) {

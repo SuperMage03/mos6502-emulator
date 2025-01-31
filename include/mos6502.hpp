@@ -31,20 +31,24 @@ public:
     };
 
 private:
-    // Helper class for mos6502 address pointer
-    class MOS6502Ptr {
+    // Class for mos6502 address pointer using similar idea as an iterator
+    class Pointer {
     public:
         enum class Register {
             ACCUMULATOR,
         };
     private:
-        std::variant<uint16_t, Register> address;
+        MOS6502& cpu_;
+        std::variant<uint16_t, Register> location_to_point;
+        explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
+        explicit Pointer(MOS6502& cpu, const Register& target_register);
     public:
-        MOS6502Ptr(const uint16_t& virtual_address);
-        MOS6502Ptr(const Register& target_register);
         void operator=(const uint16_t& virtual_address);
         void operator=(const Register& target_register);
-        uint8_t& dereference(MOS6502& cpu);
+        uint8_t& operator*() const;
+        Pointer& operator++();
+        Pointer& operator+=(const int16_t& increment);
+        friend class MOS6502;
     };
 
     BUS* bus;
@@ -79,7 +83,7 @@ private:
     uint8_t instruction_cycle_remaining_; // Cycles remaining for the current instruction to complete
     
     // Variables that emulates the data carried on a data-path
-    MOS6502Ptr operand_address_;
+    Pointer operand_address_;
     int8_t relative_addressing_offset_;
 
     /**

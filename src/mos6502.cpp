@@ -217,41 +217,68 @@ void MOS6502::RelativeAddressingMode(MOS6502& cpu) {
 }
 
 void MOS6502::AbsoluteAddressingMode(MOS6502& cpu) {
-    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_low_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
-    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_high_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
 
-    cpu.operand_address_ = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte);
+    cpu.operand_address_ = (address_high_byte << 8) | address_low_byte;
 }
 
 void MOS6502::AbsoluteXAddressingMode(MOS6502& cpu) {
-    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_low_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
-    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_high_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
 
-    cpu.operand_address_ = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte) + static_cast<uint16_t>(cpu.x_reg_);
+    cpu.operand_address_ = ((address_high_byte << 8) | address_low_byte) + cpu.x_reg_;
 }
 
 void MOS6502::AbsoluteYAddressingMode(MOS6502& cpu) {
-    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_low_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
-    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_high_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
 
-    cpu.operand_address_ = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte) + static_cast<uint16_t>(cpu.y_reg_);
+    cpu.operand_address_ = ((address_high_byte << 8) | address_low_byte) + cpu.y_reg_;
 }
 
 void MOS6502::IndirectAddressingMode(MOS6502& cpu) {
-    uint8_t address_low_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_low_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
-    uint8_t address_high_byte = cpu.readMemory(cpu.program_counter_);
+    uint16_t address_high_byte = cpu.readMemory(cpu.program_counter_);
     cpu.program_counter_++;
 
-    uint16_t target_address = (static_cast<uint16_t>(address_high_byte) << 8) + static_cast<uint16_t>(address_low_byte);
-    uint8_t indirect_address_low_byte = cpu.readMemory(target_address);
-    uint8_t indirect_address_high_byte = cpu.readMemory(target_address + 1);
+    uint16_t target_address = (address_high_byte << 8) | address_low_byte;
+    uint16_t indirect_address_low_byte = cpu.readMemory(target_address);
+    uint16_t indirect_address_high_byte = cpu.readMemory(target_address + 1);
 
-    cpu.operand_address_ = (static_cast<uint16_t>(indirect_address_high_byte) << 8) + static_cast<uint16_t>(indirect_address_low_byte);
+    cpu.operand_address_ = (indirect_address_high_byte << 8) | indirect_address_low_byte;
+}
+
+void MOS6502::IndirectXAddressingMode(MOS6502& cpu) {
+    uint8_t zero_page_adress = cpu.readMemory(cpu.program_counter_) + cpu.x_reg_;
+    cpu.program_counter_++;
+
+    uint16_t indirect_address_low_byte = cpu.readMemory(zero_page_adress);
+    uint16_t indirect_address_high_byte = cpu.readMemory(zero_page_adress + 1);
+
+    cpu.operand_address_ = (indirect_address_high_byte << 8) | indirect_address_low_byte;
+}
+
+void MOS6502::IndirectYAddressingMode(MOS6502& cpu) {
+    uint8_t zero_page_adress = cpu.readMemory(cpu.program_counter_);
+    cpu.program_counter_++;
+
+    uint16_t indirect_address_low_byte = cpu.readMemory(zero_page_adress);
+    uint16_t indirect_address_high_byte = cpu.readMemory(zero_page_adress + 1);
+
+    uint16_t indirect_address = ((indirect_address_high_byte << 8) | indirect_address_low_byte) + cpu.y_reg_;
+
+    // Page Crossed
+    if ((indirect_address & 0xFF00) != (static_cast<uint16_t>(indirect_address_high_byte) << 8)) {
+        cpu.instruction_cycle_remaining_++;
+    }
+
+    cpu.operand_address_ = indirect_address;
 }

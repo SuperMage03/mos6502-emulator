@@ -200,6 +200,20 @@ private:
     */
     static void IndirectAddressingMode(MOS6502& cpu);
 
+    /**
+    * @brief  Populate Emulated Data Path Variables Using Indirect X Addressing Mode
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void IndirectXAddressingMode(MOS6502& cpu);
+
+    /**
+    * @brief  Populate Emulated Data Path Variables Using Indirect Y Addressing Mode
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void IndirectYAddressingMode(MOS6502& cpu);
+
 public:
     // Usage: Maps OPCODE to Instruction
     static const std::unordered_map<uint8_t, Instruction> instruction_lookup_table;

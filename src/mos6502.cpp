@@ -34,11 +34,7 @@ uint8_t& MOS6502::Pointer::operator*() const {
 }
 
 MOS6502::Pointer& MOS6502::Pointer::operator++() {
-    // Holds Virtual Memory Address
-    if (std::holds_alternative<uint16_t>(location_to_point)) {
-        std::get<uint16_t>(location_to_point)++;
-    }
-    return *this;
+    return *this += 1;
 }
 
 MOS6502::Pointer& MOS6502::Pointer::operator+=(const int16_t& increment) {

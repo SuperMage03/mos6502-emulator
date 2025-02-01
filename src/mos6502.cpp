@@ -110,44 +110,69 @@ uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
     return bus->getReferenceToMemory(virtual_address);
 }
 
-void MOS6502::ADC(MOS6502& cpu) {
-    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.processor_status_.CARRY);
+uint8_t MOS6502::getStatusFlag(const StatusFlag& flag) const {
+    uint8_t bit_mask = (1 << static_cast<uint8_t>(flag));
+    return (processor_status_.RAW_VALUE & bit_mask) > 0;
+}
 
-    cpu.processor_status_.ZERO = (result == 0);
-    cpu.processor_status_.CARRY = (result > 0x00FF);
+void MOS6502::setStatusFlag(const StatusFlag& flag, const uint16_t& value) {
+    uint8_t bit_mask = (1 << static_cast<uint8_t>(flag));
+    if (value > 0) {
+        processor_status_.RAW_VALUE |= bit_mask;
+    }
+    else {
+        processor_status_.RAW_VALUE &= ~bit_mask;
+    }
+}
+
+uint8_t MOS6502::stackPop() {
+    stack_ptr_++;
+    uint8_t top_item = readMemory(0x0100 + stack_ptr_);
+    return top_item;
+}
+
+void MOS6502::stackPush(const uint8_t& data) {
+    writeMemory(0x0100 + stack_ptr_, data);
+    stack_ptr_--;
+}
+
+void MOS6502::ADC(MOS6502& cpu) {
+    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
+
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0x0000);
+    cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
 
     // If the result sign was different from accumulator sign and accumulator sign is the same as the operand sign,
     //   then we have an overflow
-    if (((cpu.accumulator_ ^ result) & 0x80) && !((cpu.accumulator_ ^ *cpu.operand_address_) & 0x80)) {
-        cpu.processor_status_.OVERFLOW_FLAG = 1;
+    if (((cpu.accumulator_ ^ result) & 0x0080) && !((cpu.accumulator_ ^ *cpu.operand_address_) & 0x80)) {
+        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 1);
     }
     else {
-        cpu.processor_status_.OVERFLOW_FLAG = 0;
+        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 0);
     }
-
-    cpu.processor_status_.NEGATIVE = ((result & 0x0080) > 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
     // Update the accumulator
     cpu.accumulator_ = result & 0x00FF;
 }
 
 void MOS6502::AND(MOS6502& cpu) {
     cpu.accumulator_ &= *cpu.operand_address_;
-    cpu.processor_status_.ZERO = (cpu.accumulator_ == 0);
-    cpu.processor_status_.NEGATIVE = ((cpu.accumulator_ & 0x80) > 0);
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0x00);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::ASL(MOS6502& cpu) {
     uint8_t result = *cpu.operand_address_ << 0x01;
 
-    cpu.processor_status_.CARRY = ((*cpu.operand_address_ & 0x80) > 0);
-    cpu.processor_status_.ZERO = (result == 0);
-    cpu.processor_status_.NEGATIVE = ((result & 0x80) > 0);
+    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0x00);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
 
     *cpu.operand_address_ = result;
 }
 
 void MOS6502::BCC(MOS6502& cpu) {
-    if (!cpu.processor_status_.CARRY) {
+    if (!cpu.getStatusFlag(StatusFlag::CARRY)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;
@@ -160,7 +185,7 @@ void MOS6502::BCC(MOS6502& cpu) {
 }
 
 void MOS6502::BCS(MOS6502& cpu) {
-    if (cpu.processor_status_.CARRY) {
+    if (cpu.getStatusFlag(StatusFlag::CARRY)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;
@@ -173,7 +198,101 @@ void MOS6502::BCS(MOS6502& cpu) {
 }
 
 void MOS6502::BEQ(MOS6502& cpu) {
-    if (cpu.processor_status_.ZERO) {
+    if (cpu.getStatusFlag(StatusFlag::ZERO)) {
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        // Branch success adds 1 cycle
+        cpu.instruction_cycle_remaining_++;
+        // If branched to a new page we need to add 1 more cycle
+        if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
+            cpu.instruction_cycle_remaining_++;
+        }
+        cpu.program_counter_ = new_pc_address;
+    }
+}
+
+void MOS6502::BIT(MOS6502& cpu) {
+    uint8_t result = *cpu.operand_address_ & cpu.accumulator_;
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0x00);
+    cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, *cpu.operand_address_ & 0x40);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+}
+
+void MOS6502::BMI(MOS6502& cpu) {
+    if (cpu.getStatusFlag(StatusFlag::NEGATIVE)) {
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        // Branch success adds 1 cycle
+        cpu.instruction_cycle_remaining_++;
+        // If branched to a new page we need to add 1 more cycle
+        if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
+            cpu.instruction_cycle_remaining_++;
+        }
+        cpu.program_counter_ = new_pc_address;
+    }
+}
+
+void MOS6502::BNE(MOS6502& cpu) {
+    if (!cpu.getStatusFlag(StatusFlag::ZERO)) {
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        // Branch success adds 1 cycle
+        cpu.instruction_cycle_remaining_++;
+        // If branched to a new page we need to add 1 more cycle
+        if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
+            cpu.instruction_cycle_remaining_++;
+        }
+        cpu.program_counter_ = new_pc_address;
+    }
+}
+
+void MOS6502::BPL(MOS6502& cpu) {
+    if (!cpu.getStatusFlag(StatusFlag::NEGATIVE)) {
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        // Branch success adds 1 cycle
+        cpu.instruction_cycle_remaining_++;
+        // If branched to a new page we need to add 1 more cycle
+        if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
+            cpu.instruction_cycle_remaining_++;
+        }
+        cpu.program_counter_ = new_pc_address;
+    }
+}
+
+void MOS6502::BRK(MOS6502& cpu) {
+    // There is a padding byte for BRK instruction
+    cpu.program_counter_++;
+
+    uint8_t pc_low_byte = cpu.program_counter_ & 0x00FF;
+    uint8_t pc_high_byte = (cpu.program_counter_ & 0xFF00) >> 8;
+
+    cpu.stackPush(pc_high_byte);
+    cpu.stackPush(pc_low_byte);
+
+    // Break flag is only really "exist" when it's pushed to stack
+    //   This is to distinguish between BRK and an IQR
+    cpu.setStatusFlag(StatusFlag::BREAK, 1);
+    cpu.stackPush(cpu.processor_status_.RAW_VALUE);
+    cpu.setStatusFlag(StatusFlag::BREAK, 0);
+
+    uint16_t interrupt_vector_low_byte = cpu.readMemory(0xFFFE);
+    uint16_t interrupt_vector_high_byte = cpu.readMemory(0xFFFF);
+
+    cpu.program_counter_ = (interrupt_vector_high_byte << 8) | interrupt_vector_low_byte;
+}
+
+void MOS6502::BVC(MOS6502& cpu) {
+    if (!cpu.getStatusFlag(StatusFlag::OVERFLOW_FLAG)) {
+        uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
+        // Branch success adds 1 cycle
+        cpu.instruction_cycle_remaining_++;
+        // If branched to a new page we need to add 1 more cycle
+        if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
+            cpu.instruction_cycle_remaining_++;
+        }
+        cpu.program_counter_ = new_pc_address;
+    }
+}
+
+void MOS6502::BVS(MOS6502& cpu) {
+    if (cpu.getStatusFlag(StatusFlag::OVERFLOW_FLAG)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
         cpu.instruction_cycle_remaining_++;

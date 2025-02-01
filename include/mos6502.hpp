@@ -20,16 +20,6 @@ public:
         uint8_t cycles;
     };
 
-    enum FLAG {
-        CARRY = 0,
-        ZERO,
-        INTERRUPT_DISABLE,
-        DECIMAL_MODE,
-        BREAK,
-        OVERFLOW_FLAG,
-        NEGATIVE
-    };
-
     // Usage: Maps OPCODE to Instruction
     static const std::unordered_map<uint8_t, Instruction> instruction_lookup_table;
 
@@ -99,6 +89,16 @@ private:
         friend class MOS6502;
     };
 
+    enum StatusFlag {
+        CARRY = 0,
+        ZERO,
+        INTERRUPT_DISABLE,
+        DECIMAL_MODE,
+        BREAK,
+        OVERFLOW_FLAG,
+        NEGATIVE
+    };
+
     BUS* bus;
 
     // MOS6502 Registers
@@ -135,46 +135,124 @@ private:
     int8_t relative_addressing_offset_;
 
     /**
-    * @brief  Executes ADC Instruction (Accumulator = Accumulator + fetched operand + Carry)
+    * @brief  Gets the value of the given processor status flag
+    * @param  flag: status flag to get value from
+    * @return State of the given processor status flag
+    */
+    uint8_t getStatusFlag(const StatusFlag& flag) const;
+
+    /**
+    * @brief  Sets the value of the given processor status flag
+    * @param  flag: status flag to set value to
+    * @param  value: new status flag value
+    * @return None
+    */
+    void setStatusFlag(const StatusFlag& flag, const uint16_t& value);
+
+    /**
+    * @brief  Pops 1 byte from stack
+    * @param  None
+    * @return None
+    */
+    uint8_t stackPop();
+
+    /**
+    * @brief  Pushes 1 byte to stack
+    * @param  data: data to be pushed to stack
+    * @return None
+    */
+    void stackPush(const uint8_t& data);
+
+    /**
+    * @brief  Executes ADC Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void ADC(MOS6502& cpu);
 
     /**
-    * @brief  Executes AND Instruction (Accumulator = Accumulator & fetched operand)
+    * @brief  Executes AND Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void AND(MOS6502& cpu);
 
     /**
-    * @brief  Executes ASL Instruction (Accumulator = fetched operand << 1)
+    * @brief  Executes ASL Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void ASL(MOS6502& cpu);
 
     /**
-    * @brief  Executes BCC Instruction (PC +=  if Carry Status Flag is 0)
+    * @brief  Executes BCC Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void BCC(MOS6502& cpu);
 
     /**
-    * @brief  Executes BCS Instruction (PC = operand if Carry Status Flag is 1)
+    * @brief  Executes BCS Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void BCS(MOS6502& cpu);
 
     /**
-    * @brief  Executes BEQ Instruction (PC = operand if Zero Status Flag is 1)
+    * @brief  Executes BEQ Instruction
     * @param  cpu: Target CPU
     * @return None
     */
     static void BEQ(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BIT Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BIT(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BMI Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BMI(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BNE Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BNE(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BPL Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BPL(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BRK Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BRK(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BVC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BVC(MOS6502& cpu);
+
+    /**
+    * @brief  Executes BVS Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void BVS(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode

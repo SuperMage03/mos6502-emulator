@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 // Project Headers
+#include "bus.hpp"
 #include "mos6502.hpp"
 #include "ram.hpp"
 
@@ -10,6 +11,7 @@ int main(int argc, char *argv[]) {
     MOS6502 cpu;
     RAM wram(2048);
     RAM vram(2048);
+    BUS bus(cpu, wram, vram);
 
     while (true) {
         cpu.runCycle();

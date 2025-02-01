@@ -1,5 +1,4 @@
 #include "ram.hpp"
-#include <cstdint>
 #include <algorithm>
 
 RAM::RAM(const uint16_t& byte_size): byte_size_(byte_size), memory_block_(std::make_unique<uint8_t[]>(byte_size)) {

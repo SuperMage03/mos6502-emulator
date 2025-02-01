@@ -1,5 +1,4 @@
 #include "bus.hpp"
-#include <cstdint>
 
 BUS::BUS(MOS6502& cpu, RAM& wram, RAM& vram): cpu_(cpu), wram_(wram), vram_(vram) {
     cpu_.connectBUS(this);

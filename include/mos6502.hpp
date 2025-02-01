@@ -30,6 +30,54 @@ public:
         NEGATIVE
     };
 
+    // Usage: Maps OPCODE to Instruction
+    static const std::unordered_map<uint8_t, Instruction> instruction_lookup_table;
+
+    MOS6502();
+
+    /**
+    * @brief  Connects CPU to BUS
+    * @param  None
+    * @return None
+    */
+    void connectBUS(BUS* target_bus);
+
+    /**
+    * @brief  Run 1 cycle of the CPU
+    * @param  None
+    * @return None
+    */
+    void runCycle();
+
+    /**
+    * @brief  Output the current CPU state
+    * @param  out: The output stream
+    * @return None
+    */
+    void outputCurrentState(std::ostream &out) const;
+
+    /**
+    * @brief  Reads 1 byte of data at given memory address
+    * @param  address: The memory address to read
+    * @return Data read at address
+    */
+    uint8_t readMemory(const uint16_t& address) const;
+
+    /**
+    * @brief  Writes 1 byte of data at given memory address
+    * @param  address: The memory address to write
+    * @param  data: Data to write
+    * @return True if successfully written, false otherwise
+    */
+    bool writeMemory(const uint16_t& address, const uint8_t& data);
+
+    /**
+    * @brief  returns a reference of the memory at the virtual memory address
+    * @param  virtual_address: The virtual memory address
+    * @return a reference of the memory at the virtual memory address
+    */
+    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
+
 private:
     // Class for mos6502 address pointer using similar idea as an iterator
     class Pointer {
@@ -213,55 +261,6 @@ private:
     * @return None
     */
     static void IndirectYAddressingMode(MOS6502& cpu);
-
-public:
-    // Usage: Maps OPCODE to Instruction
-    static const std::unordered_map<uint8_t, Instruction> instruction_lookup_table;
-
-    MOS6502();
-
-    /**
-    * @brief  Connects CPU to BUS
-    * @param  None
-    * @return None
-    */
-    void connectBUS(BUS* target_bus);
-
-    /**
-    * @brief  Run 1 cycle of the CPU
-    * @param  None
-    * @return None
-    */
-    void runCycle();
-
-    /**
-    * @brief  Output the current CPU state
-    * @param  out: The output stream
-    * @return None
-    */
-    void outputCurrentState(std::ostream &out) const;
-
-    /**
-    * @brief  Reads 1 byte of data at given memory address
-    * @param  address: The memory address to read
-    * @return Data read at address
-    */
-    uint8_t readMemory(const uint16_t& address) const;
-
-    /**
-    * @brief  Writes 1 byte of data at given memory address
-    * @param  address: The memory address to write
-    * @param  data: Data to write
-    * @return True if successfully written, false otherwise
-    */
-    bool writeMemory(const uint16_t& address, const uint8_t& data);
-
-    /**
-    * @brief  returns a reference of the memory at the virtual memory address
-    * @param  virtual_address: The virtual memory address
-    * @return a reference of the memory at the virtual memory address
-    */
-    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 };
 
 #endif

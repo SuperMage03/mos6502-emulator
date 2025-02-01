@@ -5,9 +5,6 @@
 #include <memory>
 
 class RAM {
-private:
-    const uint16_t byte_size_;
-    std::unique_ptr<uint8_t[]> memory_block_;
 public:
     RAM(const uint16_t& byte_size);
     uint8_t read(const uint16_t& address) const;
@@ -19,6 +16,9 @@ public:
     * @return a reference of the memory at the virtual memory address
     */
     uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
+private:
+    const uint16_t byte_size_;
+    std::unique_ptr<uint8_t[]> memory_block_;
 };
 
 #endif

@@ -1,7 +1,6 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
-#include <cstdint>
 // Project Headers
 #include "bus.hpp"
 

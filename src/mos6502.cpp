@@ -259,6 +259,8 @@ void MOS6502::BPL(MOS6502& cpu) {
 void MOS6502::BRK(MOS6502& cpu) {
     // There is a padding byte for BRK instruction
     cpu.program_counter_++;
+    // Make sure that CPU is not in Interrupt Mode After BRK
+    cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
 
     uint8_t pc_low_byte = cpu.program_counter_ & 0x00FF;
     uint8_t pc_high_byte = (cpu.program_counter_ & 0xFF00) >> 8;
@@ -302,6 +304,39 @@ void MOS6502::BVS(MOS6502& cpu) {
         }
         cpu.program_counter_ = new_pc_address;
     }
+}
+
+void MOS6502::CLC(MOS6502& cpu) {
+    cpu.setStatusFlag(StatusFlag::CARRY, 0);
+}
+
+void MOS6502::CLI(MOS6502& cpu) {
+    cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 0);
+}
+
+void MOS6502::CLV(MOS6502& cpu) {
+    cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 0);
+}
+
+void MOS6502::CMP(MOS6502& cpu) {
+    int16_t result = cpu.accumulator_ - *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
+}
+
+void MOS6502::CPX(MOS6502& cpu) {
+    int16_t result = cpu.x_reg_ - *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
+}
+
+void MOS6502::CPY(MOS6502& cpu) {
+    int16_t result = cpu.y_reg_ - *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
 }
 
 void MOS6502::ImplicitAddressingMode(MOS6502& cpu) {

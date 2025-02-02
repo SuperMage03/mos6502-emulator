@@ -255,6 +255,55 @@ private:
     static void BVS(MOS6502& cpu);
 
     /**
+    * @brief  Executes CLC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CLC(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CLD Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CLD(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CLI Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CLI(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CLV Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CLV(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CMP Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CMP(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CPX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CPX(MOS6502& cpu);
+
+    /**
+    * @brief  Executes CPY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void CPY(MOS6502& cpu);
+
+    /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode
     * @param  cpu: Target CPU
     * @return None

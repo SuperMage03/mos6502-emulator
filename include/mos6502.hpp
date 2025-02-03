@@ -304,6 +304,55 @@ private:
     static void CPY(MOS6502& cpu);
 
     /**
+    * @brief  Executes DEC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void DEC(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes DEX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void DEX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes DEY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void DEY(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes EOR Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void EOR(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes INC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void INC(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes INX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void INX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes INY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void INY(MOS6502& cpu);
+
+    /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode
     * @param  cpu: Target CPU
     * @return None

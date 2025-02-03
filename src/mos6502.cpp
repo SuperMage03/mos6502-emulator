@@ -339,6 +339,48 @@ void MOS6502::CPY(MOS6502& cpu) {
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
 }
 
+void MOS6502::DEC(MOS6502& cpu) {
+    (*cpu.operand_address_)--;
+    cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+}
+
+void MOS6502::DEX(MOS6502& cpu) {
+    cpu.x_reg_--;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
+}
+
+void MOS6502::DEY(MOS6502& cpu) {
+    cpu.y_reg_--;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
+}
+
+void MOS6502::EOR(MOS6502& cpu) {
+    cpu.accumulator_ ^= *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
+}
+
+void MOS6502::INC(MOS6502& cpu) {
+    (*cpu.operand_address_)++;
+    cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+}
+
+void MOS6502::INX(MOS6502& cpu) {
+    cpu.x_reg_++;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
+}
+
+void MOS6502::INY(MOS6502& cpu) {
+    cpu.y_reg_++;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
+}
+
 void MOS6502::ImplicitAddressingMode(MOS6502& cpu) {
     cpu.operand_address_ = Pointer::Register::ACCUMULATOR;
 }

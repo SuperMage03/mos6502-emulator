@@ -81,6 +81,7 @@ private:
         explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
         explicit Pointer(MOS6502& cpu, const Register& target_register);
     public:
+        const std::variant<uint16_t, Register>& get() const;
         void operator=(const uint16_t& virtual_address);
         void operator=(const Register& target_register);
         uint8_t& operator*() const;
@@ -351,6 +352,48 @@ private:
     * @return None
     */
     static void INY(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes JMP Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void JMP(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes JSR Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void JSR(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes LDA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void LDA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes LDX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void LDX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes LDY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void LDY(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes LSR Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void LSR(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode

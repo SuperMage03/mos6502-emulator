@@ -1,6 +1,7 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
+#include <cstdint>
 // Project Headers
 #include "bus.hpp"
 
@@ -11,6 +12,10 @@ MOS6502::Pointer::Pointer(MOS6502& cpu, const uint16_t& virtual_address):
 
 MOS6502::Pointer::Pointer(MOS6502& cpu, const MOS6502::Pointer::Register& target_register): 
     cpu_{cpu}, location_to_point{std::in_place_type<MOS6502::Pointer::Register>, target_register} {}
+
+const std::variant<uint16_t, MOS6502::Pointer::Register>& MOS6502::Pointer::get() const {
+    return location_to_point;
+}
 
 void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
     location_to_point = virtual_address;
@@ -379,6 +384,51 @@ void MOS6502::INY(MOS6502& cpu) {
     cpu.y_reg_++;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
+}
+
+void MOS6502::JMP(MOS6502& cpu) {
+    const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
+    if (std::holds_alternative<uint16_t>(jump_location)) {
+        cpu.program_counter_ = std::get<uint16_t>(jump_location);
+    }
+}
+
+void MOS6502::JSR(MOS6502& cpu) {
+    const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
+    if (std::holds_alternative<uint16_t>(jump_location)) {
+        uint16_t return_address = cpu.program_counter_ - 1;
+        uint8_t return_address_high_byte = (return_address & 0xFF00) >> 8;
+        uint8_t return_address_low_byte = return_address & 0x00FF;
+        cpu.stackPush(return_address_high_byte);
+        cpu.stackPush(return_address_low_byte);
+        cpu.program_counter_ = std::get<uint16_t>(jump_location);
+    }
+}
+
+void MOS6502::LDA(MOS6502& cpu) {
+    cpu.accumulator_ = *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
+}
+
+void MOS6502::LDX(MOS6502& cpu) {
+    cpu.x_reg_ = *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
+}
+
+void MOS6502::LDY(MOS6502& cpu) {
+    cpu.y_reg_ = *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
+}
+
+void MOS6502::LSR(MOS6502& cpu) {
+    uint8_t result = *cpu.operand_address_ >> 1;
+    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
+    *cpu.operand_address_ = result;
 }
 
 void MOS6502::ImplicitAddressingMode(MOS6502& cpu) {

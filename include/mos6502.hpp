@@ -394,6 +394,76 @@ private:
     * @return None
     */
     static void LSR(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes NOP Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void NOP(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes ORA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void ORA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes PHA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void PHA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes PHA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void PHP(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes PLA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void PLA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes PLP Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void PLP(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes ROL Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void ROL(MOS6502& cpu);
+
+    /**
+    * @brief  Executes ROR Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void ROR(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes RTI Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void RTI(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes RTS Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void RTS(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode

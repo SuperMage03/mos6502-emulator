@@ -431,6 +431,63 @@ void MOS6502::LSR(MOS6502& cpu) {
     *cpu.operand_address_ = result;
 }
 
+void MOS6502::NOP(MOS6502& cpu) {
+    cpu.program_counter_++;
+}
+
+void MOS6502::ORA(MOS6502& cpu) {
+    cpu.accumulator_ |= *cpu.operand_address_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
+}
+
+void MOS6502::PHA(MOS6502& cpu) {
+    cpu.stackPush(cpu.accumulator_);
+}
+
+void MOS6502::PHP(MOS6502& cpu) {
+    cpu.stackPush(cpu.processor_status_.RAW_VALUE);
+}
+
+void MOS6502::PLA(MOS6502& cpu) {
+    cpu.accumulator_ = cpu.stackPop();
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ & 0x80);
+}
+
+void MOS6502::PLP(MOS6502& cpu) {
+    cpu.processor_status_.RAW_VALUE = cpu.stackPop();
+}
+
+void MOS6502::ROL(MOS6502& cpu) {
+    uint8_t result = (*cpu.operand_address_ << 1) | cpu.getStatusFlag(StatusFlag::CARRY);
+    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
+    *cpu.operand_address_ = result;
+}
+
+void MOS6502::ROR(MOS6502& cpu) {
+    uint8_t result = (*cpu.operand_address_ >> 1) | (cpu.getStatusFlag(StatusFlag::CARRY) << 7);
+    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
+    cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
+    *cpu.operand_address_ = result;
+}
+
+void MOS6502::RTI(MOS6502& cpu) {
+    cpu.processor_status_.RAW_VALUE = cpu.stackPop();
+    uint16_t pc_low_byte = cpu.stackPop();
+    uint16_t pc_high_byte = cpu.stackPop();
+    cpu.program_counter_ = (pc_high_byte << 8) | pc_low_byte;
+}
+
+void MOS6502::RTS(MOS6502& cpu) {
+    uint16_t pc_low_byte = cpu.stackPop();
+    uint16_t pc_high_byte = cpu.stackPop();
+    cpu.program_counter_ = ((pc_high_byte << 8) | pc_low_byte) + 1;
+}
+
 void MOS6502::ImplicitAddressingMode(MOS6502& cpu) {
     cpu.operand_address_ = Pointer::Register::ACCUMULATOR;
 }

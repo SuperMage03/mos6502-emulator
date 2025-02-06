@@ -2,11 +2,14 @@
 #define _RAM_HPP_
 
 #include <cstdint>
+#include <fstream>
 #include <memory>
 
 class RAM {
 public:
-    RAM(const uint16_t& byte_size);
+    RAM(const uint32_t& byte_size);
+    RAM(std::ifstream& file_in);
+
     uint8_t read(const uint16_t& address) const;
     bool write(const uint16_t& address, const uint8_t& data);
 
@@ -17,7 +20,7 @@ public:
     */
     uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 private:
-    const uint16_t byte_size_;
+    uint32_t byte_size_;
     std::unique_ptr<uint8_t[]> memory_block_;
 };
 

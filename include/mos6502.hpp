@@ -3,9 +3,10 @@
 // Standard Library Headers
 #include <cstdint>
 #include <ostream>
-#include <unordered_map>
+#include <array>
 #include <variant>
 
+#define MOS6502_NUMBER_OF_INSTRUCTIONS 256
 #define MOS6502_CLOCK_SPEED 1.789773 // In MHz
 #define MOS6502_CLOCK_PERIOD 558.73007 // In nanoseconds per cycle
 
@@ -22,7 +23,7 @@ public:
     };
 
     // Usage: Maps OPCODE to Instruction
-    static const Instruction instruction_lookup_table[0x100];
+    static const std::array<Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> instruction_lookup_table;
 
     MOS6502();
 

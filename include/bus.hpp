@@ -8,7 +8,7 @@
 
 class BUS {
 public:
-    BUS(MOS6502& cpu, RAM& wram, RAM& vram);
+    BUS(MOS6502& cpu, RAM& ram);
     uint8_t readBusData(const uint16_t& address) const;
     bool writeBusData(const uint16_t& address, const uint8_t& data);
 
@@ -20,8 +20,7 @@ public:
     uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 private:
     MOS6502& cpu_;
-    RAM& wram_;
-    RAM& vram_;
+    RAM& ram_;
 };
 
 #endif

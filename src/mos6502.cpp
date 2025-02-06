@@ -1,7 +1,6 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
-#include <cstdint>
 // Project Headers
 #include "bus.hpp"
 
@@ -51,7 +50,7 @@ MOS6502::Pointer& MOS6502::Pointer::operator+=(const int16_t& increment) {
 
 // ----------------------------- MOS6502 Class ---------------------------------
 
-const MOS6502::Instruction MOS6502::instruction_lookup_table[0x100] = {
+const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::instruction_lookup_table = {{
     { "BRK", MOS6502::BRK, MOS6502::IMM, 7 },{ "ORA", MOS6502::ORA, MOS6502::IZX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 3 },{ "ORA", MOS6502::ORA, MOS6502::ZP0, 3 },{ "ASL", MOS6502::ASL, MOS6502::ZP0, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 5 },{ "PHP", MOS6502::PHP, MOS6502::IMP, 3 },{ "ORA", MOS6502::ORA, MOS6502::IMM, 2 },{ "ASL", MOS6502::ASL, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ABS, 4 },{ "ASL", MOS6502::ASL, MOS6502::ABS, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },
     { "BPL", MOS6502::BPL, MOS6502::REL, 2 },{ "ORA", MOS6502::ORA, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ZPX, 4 },{ "ASL", MOS6502::ASL, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "CLC", MOS6502::CLC, MOS6502::IMP, 2 },{ "ORA", MOS6502::ORA, MOS6502::ABY, 4 },{ "???", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ABX, 4 },{ "ASL", MOS6502::ASL, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
     { "JSR", MOS6502::JSR, MOS6502::ABS, 6 },{ "AND", MOS6502::AND, MOS6502::IZX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "BIT", MOS6502::BIT, MOS6502::ZP0, 3 },{ "AND", MOS6502::AND, MOS6502::ZP0, 3 },{ "ROL", MOS6502::ROL, MOS6502::ZP0, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 5 },{ "PLP", MOS6502::PLP, MOS6502::IMP, 4 },{ "AND", MOS6502::AND, MOS6502::IMM, 2 },{ "ROL", MOS6502::ROL, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "BIT", MOS6502::BIT, MOS6502::ABS, 4 },{ "AND", MOS6502::AND, MOS6502::ABS, 4 },{ "ROL", MOS6502::ROL, MOS6502::ABS, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },
@@ -68,7 +67,7 @@ const MOS6502::Instruction MOS6502::instruction_lookup_table[0x100] = {
     { "BNE", MOS6502::BNE, MOS6502::REL, 2 },{ "CMP", MOS6502::CMP, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "CMP", MOS6502::CMP, MOS6502::ZPX, 4 },{ "DEC", MOS6502::DEC, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "CLD", MOS6502::CLD, MOS6502::IMP, 2 },{ "CMP", MOS6502::CMP, MOS6502::ABY, 4 },{ "NOP", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "CMP", MOS6502::CMP, MOS6502::ABX, 4 },{ "DEC", MOS6502::DEC, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
     { "CPX", MOS6502::CPX, MOS6502::IMM, 2 },{ "SBC", MOS6502::SBC, MOS6502::IZX, 6 },{ "???", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "CPX", MOS6502::CPX, MOS6502::ZP0, 3 },{ "SBC", MOS6502::SBC, MOS6502::ZP0, 3 },{ "INC", MOS6502::INC, MOS6502::ZP0, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 5 },{ "INX", MOS6502::INX, MOS6502::IMP, 2 },{ "SBC", MOS6502::SBC, MOS6502::IMM, 2 },{ "NOP", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::SBC, MOS6502::IMP, 2 },{ "CPX", MOS6502::CPX, MOS6502::ABS, 4 },{ "SBC", MOS6502::SBC, MOS6502::ABS, 4 },{ "INC", MOS6502::INC, MOS6502::ABS, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },
     { "BEQ", MOS6502::BEQ, MOS6502::REL, 2 },{ "SBC", MOS6502::SBC, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ZPX, 4 },{ "INC", MOS6502::INC, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "SED", MOS6502::SED, MOS6502::IMP, 2 },{ "SBC", MOS6502::SBC, MOS6502::ABY, 4 },{ "NOP", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ABX, 4 },{ "INC", MOS6502::INC, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
-};
+}};
 
 MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accumulator_(0), 
                     x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0}),
@@ -81,30 +80,32 @@ void MOS6502::connectBUS(BUS* target_bus) {
 }
 
 void MOS6502::runCycle() {
-    static bool fetched = false;
-    static void (*opcode_fn)(uint16_t& program_counter) = nullptr;
+    if (total_cycle_ran_ == 0) {
+        uint16_t starting_pc_low_byte = readMemory(program_counter_);
+        program_counter_++;
+        uint16_t starting_pc_high_byte = readMemory(program_counter_);
+        program_counter_++;
 
+        program_counter_ = (starting_pc_high_byte << 8) | starting_pc_low_byte;
+    }
     total_cycle_ran_++;
 
     // Fetch new instruction (Cost 1 cycle)
-    if (!fetched) {
+    if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
         program_counter_++;
 
-        instruction_ = &instruction_lookup_table[instruction_opcode_];
-        
-        instruction_->operationFn(*this);
-
-        fetched = true;
+        instruction_ = &instruction_lookup_table.at(instruction_opcode_);
+        instruction_->addressingMode(*this);
+        instruction_cycle_remaining_ = instruction_->cycles;
         return;
     }
 
-    // If opcode cycle
-    if (instruction_cycle_remaining_ == 0) {
-        opcode_fn(program_counter_);
-        fetched = false;
-    }
     instruction_cycle_remaining_--;
+    // If opcode cycle has non-left, apply the operation function
+    if (instruction_cycle_remaining_ == 0) {
+        instruction_->operationFn(*this);
+    }
 }
 
 void MOS6502::outputCurrentState(std::ostream &out) const {
@@ -155,6 +156,8 @@ void MOS6502::stackPush(const uint8_t& data) {
     writeMemory(0x0100 + stack_ptr_, data);
     stack_ptr_--;
 }
+
+// ---------------------- INSTRUCTION IMPLEMENTATIONS --------------------------
 
 void MOS6502::ADC(MOS6502& cpu) {
     uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
@@ -328,6 +331,10 @@ void MOS6502::BVS(MOS6502& cpu) {
 
 void MOS6502::CLC(MOS6502& cpu) {
     cpu.setStatusFlag(StatusFlag::CARRY, 0);
+}
+
+void MOS6502::CLD(MOS6502& cpu) {
+    cpu.setStatusFlag(StatusFlag::DECIMAL_MODE, 0);
 }
 
 void MOS6502::CLI(MOS6502& cpu) {
@@ -574,6 +581,12 @@ void MOS6502::TXS(MOS6502& cpu) {
 void MOS6502::TYA(MOS6502& cpu) {
     cpu.accumulator_ = cpu.y_reg_;
 }
+
+void MOS6502::XXX(MOS6502& cpu) {
+    // DO NOTHING
+}
+
+// -------------------- ADDRESSING MODE IMPLEMENTATIONS ------------------------
 
 void MOS6502::IMP(MOS6502& cpu) {
     cpu.operand_address_ = Pointer::Register::ACCUMULATOR;

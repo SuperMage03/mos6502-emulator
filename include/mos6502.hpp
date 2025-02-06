@@ -15,13 +15,14 @@ class BUS;
 class MOS6502 {
 public:
     struct Instruction {
+        const std::string name;
         void (*addressingMode)(MOS6502& cpu);
         void (*operationFn)(MOS6502& cpu);
         uint8_t cycles;
     };
 
     // Usage: Maps OPCODE to Instruction
-    static const std::unordered_map<uint8_t, Instruction> instruction_lookup_table;
+    static const Instruction instruction_lookup_table[0x100];
 
     MOS6502();
 
@@ -464,48 +465,146 @@ private:
     * @return None
     */
     static void RTS(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes SBC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void SBC(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes SEC Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void SEC(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes SED Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void SED(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes SEI Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void SEI(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes STA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void STA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes STX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void STX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes STY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void STY(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes TAX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TAX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes TAY Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TAY(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes TSX Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TSX(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes TXA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TXA(MOS6502& cpu);
+    
+    /**
+    * @brief  Executes TXS Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TXS(MOS6502& cpu);
+
+    /**
+    * @brief  Executes TYA Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void TYA(MOS6502& cpu);
+
+    /**
+    * @brief  Executes Unofficial Instruction
+    * @param  cpu: Target CPU
+    * @return None
+    */
+    static void XXX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void ImplicitAddressingMode(MOS6502& cpu);
+    static void IMP(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Immediate Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void ImmediateAddressingMode(MOS6502& cpu);
+    static void IMM(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void ZeroPageAddressingMode(MOS6502& cpu);
+    static void ZP0(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page X Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void ZeroPageXAddressingMode(MOS6502& cpu);
+    static void ZPX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page Y Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void ZeroPageYAddressingMode(MOS6502& cpu);
+    static void ZPY(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Relative Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void RelativeAddressingMode(MOS6502& cpu);
+    static void REL(MOS6502& cpu);
 
 
     /**
@@ -513,7 +612,7 @@ private:
     * @param  cpu: Target CPU
     * @return None
     */
-    static void AbsoluteAddressingMode(MOS6502& cpu);
+    static void ABS(MOS6502& cpu);
 
 
     /**
@@ -521,35 +620,35 @@ private:
     * @param  cpu: Target CPU
     * @return None
     */
-    static void AbsoluteXAddressingMode(MOS6502& cpu);
+    static void ABX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Absolute Y Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void AbsoluteYAddressingMode(MOS6502& cpu);
+    static void ABY(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void IndirectAddressingMode(MOS6502& cpu);
+    static void IND(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect X Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void IndirectXAddressingMode(MOS6502& cpu);
+    static void IZX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect Y Addressing Mode
     * @param  cpu: Target CPU
     * @return None
     */
-    static void IndirectYAddressingMode(MOS6502& cpu);
+    static void IZY(MOS6502& cpu);
 };
 
 #endif

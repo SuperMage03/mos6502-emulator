@@ -87,8 +87,12 @@ void MOS6502::connectBUS(BUS* target_bus) {
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
-    if (program_counter_ == 0x37b5) {
-        std::cout << "Gamer" << std::endl;
+    if (program_counter_ == 0x35DB) {
+        // Counter Hit
+    }
+
+    if (total_cycle_ran_ >= 394211) {
+        // Counter Hit
     }
 
     // Fetch new instruction (Cost 1 cycle)
@@ -206,6 +210,9 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
 }
 
 uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
+    if (virtual_address == 0x0012) {
+        // Address Retreived
+    }
     return bus->getReferenceToMemory(virtual_address);
 }
 
@@ -344,6 +351,10 @@ void MOS6502::BNE(MOS6502& cpu) {
         if ((cpu.program_counter_ & 0xFF00) != (new_pc_address & 0xFF00)) {
             cpu.instruction_cycle_remaining_++;
         }
+
+        if (cpu.program_counter_ == new_pc_address + 2) {
+            // Stuck
+        }
         cpu.program_counter_ = new_pc_address;
     }
 }
@@ -362,14 +373,15 @@ void MOS6502::BPL(MOS6502& cpu) {
 }
 
 void MOS6502::BRK(MOS6502& cpu) {
-    // There is a padding byte for BRK instruction
-    cpu.program_counter_++;
-
     uint8_t pc_low_byte = cpu.program_counter_ & 0x00FF;
     uint8_t pc_high_byte = (cpu.program_counter_ & 0xFF00) >> 8;
 
     cpu.stackPush(pc_high_byte);
     cpu.stackPush(pc_low_byte);
+
+    // There is a padding byte for BRK instruction 
+    //    (Just adding for the clarity, PC will be changed anyways at the end of the function)
+    cpu.program_counter_++;
 
     // Break flag is only really "exist" when it's pushed to stack
     //   This is to distinguish between BRK and an IQR
@@ -452,6 +464,7 @@ void MOS6502::CPY(MOS6502& cpu) {
 }
 
 void MOS6502::DEC(MOS6502& cpu) {
+    uint8_t& operand = *cpu.operand_address_; // For debug
     (*cpu.operand_address_)--;
     cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
@@ -609,15 +622,15 @@ void MOS6502::SBC(MOS6502& cpu) {
     // Due to the nature of subtraction, it will be subrated one more if carry is cleared
     // So, A = A - memory - (1 - C) = A + -memory - 1 + C
     // Using two's complement: A = A + (~memory + 1) - 1 + C = A + ~memory + C
-    uint16_t operand = static_cast<uint16_t>(~*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
-    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + operand;
+    uint16_t inverted_operand = static_cast<uint16_t>(*cpu.operand_address_) ^ 0x00FF;
+    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + inverted_operand + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 
     cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0x0000);
-    cpu.setStatusFlag(StatusFlag::CARRY, ~(result > 0x00FF));
+    cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
 
     // If result's sign is different from A's and the same as the operand's
     //   then we have an overflow
-    if (((cpu.accumulator_ ^ result) & 0x0080) && !((cpu.accumulator_ ^ operand) & 0x80)) {
+    if (((result ^ cpu.accumulator_) & 0x0080) && !((result ^ inverted_operand) & 0x80)) {
         cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 1);
     }
     else {
@@ -654,18 +667,26 @@ void MOS6502::STY(MOS6502& cpu) {
 
 void MOS6502::TAX(MOS6502& cpu) {
     cpu.x_reg_ = cpu.accumulator_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::TAY(MOS6502& cpu) {
     cpu.y_reg_ = cpu.accumulator_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
 }
 
 void MOS6502::TSX(MOS6502& cpu) {
     cpu.x_reg_ = cpu.stack_ptr_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::TXA(MOS6502& cpu) {
     cpu.accumulator_ = cpu.x_reg_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::TXS(MOS6502& cpu) {
@@ -674,6 +695,8 @@ void MOS6502::TXS(MOS6502& cpu) {
 
 void MOS6502::TYA(MOS6502& cpu) {
     cpu.accumulator_ = cpu.y_reg_;
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::XXX(MOS6502& cpu) {
@@ -697,12 +720,12 @@ void MOS6502::ZP0(MOS6502& cpu) {
 }
 
 void MOS6502::ZPX(MOS6502& cpu) {
-    cpu.operand_address_ = cpu.readMemory(cpu.program_counter_) + cpu.x_reg_;
+    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.x_reg_) & 0xFF;
     cpu.program_counter_++;
 }
 
 void MOS6502::ZPY(MOS6502& cpu) {
-    cpu.operand_address_ = cpu.readMemory(cpu.program_counter_) + cpu.y_reg_;
+    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.y_reg_) & 0xFF;
     cpu.program_counter_++;
 }
 

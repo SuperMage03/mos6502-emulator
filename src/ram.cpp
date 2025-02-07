@@ -15,7 +15,7 @@ RAM::RAM(std::ifstream& file_in) {
     memory_block_ = std::make_unique<uint8_t[]>(byte_size_);
 
     for (uint32_t i = 0; i < byte_size_; i++) {
-        file_in >> memory_block_[i];
+        file_in >> std::noskipws >> memory_block_[i];
     }
 }
 

@@ -6,6 +6,10 @@
 #include <array>
 #include <variant>
 
+#define MOS6502_NMI_PC_ADDRESS 0xFFFA
+#define MOS6502_STARTING_PC_ADDRESS 0xFFFC
+#define MOS6502_IRQ_PC_ADDRESS 0xFFFE
+
 #define MOS6502_NUMBER_OF_INSTRUCTIONS 256
 #define MOS6502_CLOCK_SPEED 1.789773 // In MHz
 #define MOS6502_CLOCK_PERIOD 558.73007 // In nanoseconds per cycle
@@ -17,8 +21,8 @@ class MOS6502 {
 public:
     struct Instruction {
         const std::string name;
-        void (*addressingMode)(MOS6502& cpu);
         void (*operationFn)(MOS6502& cpu);
+        void (*addressingMode)(MOS6502& cpu);
         uint8_t cycles;
     };
 
@@ -40,6 +44,27 @@ public:
     * @return None
     */
     void runCycle();
+
+    /**
+    * @brief  Resets the CPU
+    * @param  None
+    * @return None
+    */
+    void reset();
+
+    /**
+    * @brief  Normal Interrupt Request Handling Method
+    * @param  None
+    * @return None
+    */
+    void irq();
+
+    /**
+    * @brief  Non-Maskable Interrupt Handling Method
+    * @param  None
+    * @return None
+    */
+    void nmi();
 
     /**
     * @brief  Output the current CPU state
@@ -98,6 +123,7 @@ private:
         INTERRUPT_DISABLE,
         DECIMAL_MODE,
         BREAK,
+        UNUSED,
         OVERFLOW_FLAG,
         NEGATIVE
     };

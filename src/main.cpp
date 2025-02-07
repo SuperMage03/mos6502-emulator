@@ -24,12 +24,12 @@ int main(int argc, char *argv[]) {
     MOS6502 cpu;
     RAM ram(program_file);
     BUS bus(cpu, ram);
-
-    for (unsigned int i = 0; i < 5; i++) {
-    // while (true) {
+    
+    // for (unsigned int i = 0; i < 30; i++) {
+    while (true) {
         cpu.runCycle();
-        cpu.outputCurrentState(std::cout);
-        std::cout << std::endl;
+        // cpu.outputCurrentState(std::cout);
+        // std::cout << std::endl;
         std::this_thread::sleep_for(std::chrono::nanoseconds(std::lrint(MOS6502_CLOCK_PERIOD)));
     }
 

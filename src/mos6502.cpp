@@ -1,6 +1,8 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
+#include <cstdint>
+#include <iostream>
 // Project Headers
 #include "bus.hpp"
 
@@ -77,19 +79,13 @@ MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accum
 
 void MOS6502::connectBUS(BUS* target_bus) {
     bus = target_bus;
+    // Do a reset to clear CPU states
+    reset();
 }
 
 void MOS6502::runCycle() {
-    if (total_cycle_ran_ == 0) {
-        uint16_t starting_pc_low_byte = readMemory(program_counter_);
-        program_counter_++;
-        uint16_t starting_pc_high_byte = readMemory(program_counter_);
-        program_counter_++;
-
-        program_counter_ = (starting_pc_high_byte << 8) | starting_pc_low_byte;
-    }
     total_cycle_ran_++;
-
+    
     // Fetch new instruction (Cost 1 cycle)
     if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
@@ -102,10 +98,75 @@ void MOS6502::runCycle() {
     }
 
     instruction_cycle_remaining_--;
-    // If opcode cycle has non-left, apply the operation function
-    if (instruction_cycle_remaining_ == 0) {
+    
+    // If there are no more cycles, apply the operation function
+    if ((instruction_ != nullptr) && (instruction_cycle_remaining_ == 0)) {
         instruction_->operationFn(*this);
+        std::cout << "Executed " << instruction_->name << std::endl;
+        outputCurrentState(std::cout);
+        std::cout << std::endl;
     }
+}
+
+void MOS6502::reset() {
+    // MOS6502 Registers
+    uint16_t starting_pc_low_byte = readMemory(MOS6502_STARTING_PC_ADDRESS);
+    uint16_t starting_pc_high_byte = readMemory(MOS6502_STARTING_PC_ADDRESS + 1);
+    program_counter_ = (starting_pc_high_byte << 8) | starting_pc_low_byte;
+
+    accumulator_ = 0;
+    x_reg_ = 0;
+    y_reg_ = 0;
+    stack_ptr_ = 0xFD;
+
+    processor_status_.RAW_VALUE = 0x00;
+    setStatusFlag(StatusFlag::UNUSED, 1);
+
+    // Emulator Variables
+    total_cycle_ran_ = 0;
+
+    // Variables needed for fetch->decode->execute cycle
+    instruction_ = nullptr;
+    instruction_opcode_ = 0;
+    instruction_cycle_remaining_ = 8; // Reset takes time
+
+    // Variables that emulates the data carried on a data-path
+    operand_address_ = 0;
+    relative_addressing_offset_ = 0;
+}
+
+void MOS6502::irq() {
+    if (getStatusFlag(StatusFlag::INTERRUPT_DISABLE)) return;
+
+    uint8_t pc_high_byte = (program_counter_ & 0xFF00) >> 8;
+    uint8_t pc_low_byte = program_counter_ & 0x00FF;
+    stackPush(pc_high_byte);
+    stackPush(pc_low_byte);
+
+    setStatusFlag(StatusFlag::BREAK, 0);
+    setStatusFlag(StatusFlag::UNUSED, 1);
+    setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
+    stackPush(processor_status_.RAW_VALUE);
+
+    uint16_t irq_pc_low_byte = readMemory(MOS6502_IRQ_PC_ADDRESS);
+    uint16_t irq_pc_high_byte = readMemory(MOS6502_IRQ_PC_ADDRESS + 1);
+    program_counter_ = (irq_pc_high_byte << 8) | irq_pc_low_byte;
+}
+
+void MOS6502::nmi() {
+    uint8_t pc_high_byte = (program_counter_ & 0xFF00) >> 8;
+    uint8_t pc_low_byte = program_counter_ & 0x00FF;
+    stackPush(pc_high_byte);
+    stackPush(pc_low_byte);
+
+    setStatusFlag(StatusFlag::BREAK, 0);
+    setStatusFlag(StatusFlag::UNUSED, 1);
+    setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
+    stackPush(processor_status_.RAW_VALUE);
+
+    uint16_t nmi_pc_low_byte = readMemory(MOS6502_NMI_PC_ADDRESS);
+    uint16_t nmi_pc_high_byte = readMemory(MOS6502_NMI_PC_ADDRESS + 1);
+    program_counter_ = (nmi_pc_high_byte << 8) | nmi_pc_low_byte;
 }
 
 void MOS6502::outputCurrentState(std::ostream &out) const {
@@ -512,9 +573,8 @@ void MOS6502::RTS(MOS6502& cpu) {
 
 void MOS6502::SBC(MOS6502& cpu) {
     // Due to the nature of subtraction, it will be subrated one more if carry is cleared
-    // So, A = A - memory - ~carry = A - (memory + ~carry)
-    // Subtracting is essentially just adding the 2's complement
-    // Coverting to Addition, we get A = A + (~(memory + ~carry) + 1) = A + ~memory + carry
+    // So, A = A - memory - (1 - C) = A + -memory - 1 + C
+    // Using two's complement: A = A + (~memory + 1) - 1 + C = A + ~memory + C
     uint16_t operand = static_cast<uint16_t>(~*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
     uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + operand;
 

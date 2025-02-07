@@ -52,6 +52,7 @@ MOS6502::Pointer& MOS6502::Pointer::operator+=(const int16_t& increment) {
 
 // ----------------------------- MOS6502 Class ---------------------------------
 
+// Thanks to One Lone Coder for the opcode table
 const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::instruction_lookup_table = {{
     { "BRK", MOS6502::BRK, MOS6502::IMM, 7 },{ "ORA", MOS6502::ORA, MOS6502::IZX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 3 },{ "ORA", MOS6502::ORA, MOS6502::ZP0, 3 },{ "ASL", MOS6502::ASL, MOS6502::ZP0, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 5 },{ "PHP", MOS6502::PHP, MOS6502::IMP, 3 },{ "ORA", MOS6502::ORA, MOS6502::IMM, 2 },{ "ASL", MOS6502::ASL, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ABS, 4 },{ "ASL", MOS6502::ASL, MOS6502::ABS, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },
     { "BPL", MOS6502::BPL, MOS6502::REL, 2 },{ "ORA", MOS6502::ORA, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ZPX, 4 },{ "ASL", MOS6502::ASL, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "CLC", MOS6502::CLC, MOS6502::IMP, 2 },{ "ORA", MOS6502::ORA, MOS6502::ABY, 4 },{ "???", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "ORA", MOS6502::ORA, MOS6502::ABX, 4 },{ "ASL", MOS6502::ASL, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
@@ -72,7 +73,7 @@ const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::
 }};
 
 MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accumulator_(0), 
-                    x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0}),
+                    x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0b00110110}),
                     total_cycle_ran_(0), instruction_(nullptr), instruction_opcode_(0x00), 
                     instruction_cycle_remaining_(0), operand_address_(*this, 0x00), 
                     relative_addressing_offset_(0) {}
@@ -85,7 +86,11 @@ void MOS6502::connectBUS(BUS* target_bus) {
 
 void MOS6502::runCycle() {
     total_cycle_ran_++;
-    
+
+    if (program_counter_ == 0x37b5) {
+        std::cout << "Gamer" << std::endl;
+    }
+
     // Fetch new instruction (Cost 1 cycle)
     if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
@@ -105,6 +110,12 @@ void MOS6502::runCycle() {
         std::cout << "Executed " << instruction_->name << std::endl;
         outputCurrentState(std::cout);
         std::cout << std::endl;
+
+        // This is for stepping one instructions at a time
+        // std::string garbage;
+        // std::getline(std::cin, garbage);
+
+        instruction_ = nullptr;
     }
 }
 
@@ -119,8 +130,7 @@ void MOS6502::reset() {
     y_reg_ = 0;
     stack_ptr_ = 0xFD;
 
-    processor_status_.RAW_VALUE = 0x00;
-    setStatusFlag(StatusFlag::UNUSED, 1);
+    processor_status_.RAW_VALUE = 0b00110110;
 
     // Emulator Variables
     total_cycle_ran_ = 0;
@@ -143,10 +153,13 @@ void MOS6502::irq() {
     stackPush(pc_high_byte);
     stackPush(pc_low_byte);
 
-    setStatusFlag(StatusFlag::BREAK, 0);
-    setStatusFlag(StatusFlag::UNUSED, 1);
+    ProcessorStatus status_to_push = processor_status_;
+    status_to_push.BREAK = 0;
+    status_to_push.UNUSED = 1;
+    status_to_push.INTERRUPT_DISABLE = 1;
+    stackPush(status_to_push.RAW_VALUE);
+
     setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
-    stackPush(processor_status_.RAW_VALUE);
 
     uint16_t irq_pc_low_byte = readMemory(MOS6502_IRQ_PC_ADDRESS);
     uint16_t irq_pc_high_byte = readMemory(MOS6502_IRQ_PC_ADDRESS + 1);
@@ -159,10 +172,13 @@ void MOS6502::nmi() {
     stackPush(pc_high_byte);
     stackPush(pc_low_byte);
 
-    setStatusFlag(StatusFlag::BREAK, 0);
-    setStatusFlag(StatusFlag::UNUSED, 1);
+    ProcessorStatus status_to_push = processor_status_;
+    status_to_push.BREAK = 0;
+    status_to_push.UNUSED = 1;
+    status_to_push.INTERRUPT_DISABLE = 1;
+    stackPush(status_to_push.RAW_VALUE);
+
     setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
-    stackPush(processor_status_.RAW_VALUE);
 
     uint16_t nmi_pc_low_byte = readMemory(MOS6502_NMI_PC_ADDRESS);
     uint16_t nmi_pc_high_byte = readMemory(MOS6502_NMI_PC_ADDRESS + 1);
@@ -171,13 +187,14 @@ void MOS6502::nmi() {
 
 void MOS6502::outputCurrentState(std::ostream &out) const {
     out << std::hex;
-    out << "Program Counter: " << program_counter_ << std::endl;
-    out << "Stack Pointer: " << static_cast<uint16_t>(stack_ptr_) << std::endl;
-    out << "Accumulator: " << static_cast<uint16_t>(accumulator_) << std::endl;
-    out << "X Register: " << static_cast<uint16_t>(x_reg_) << std::endl;
-    out << "Y Register: " << static_cast<uint16_t>(y_reg_) << std::endl;
-    out << "Status Flags: " << std::bitset<8>(processor_status_.RAW_VALUE) << std::endl;
-    out << "Cycles Elapsed: " << total_cycle_ran_ << std::endl;
+    out << "Program Counter: 0x" << program_counter_ << std::endl;
+    out << "Stack Pointer  : 0x" << static_cast<uint16_t>(stack_ptr_) << std::endl;
+    out << "Accumulator    : 0x" << static_cast<uint16_t>(accumulator_) << std::endl;
+    out << "X Register     : 0x" << static_cast<uint16_t>(x_reg_) << std::endl;
+    out << "Y Register     : 0x" << static_cast<uint16_t>(y_reg_) << std::endl;
+    out << "Status Flags   : 0b" << std::bitset<8>(processor_status_.RAW_VALUE) << std::endl;
+    out << std::dec;
+    out << "Cycles Elapsed : " << total_cycle_ran_ << std::endl;
 }
 
 uint8_t MOS6502::readMemory(const uint16_t& address) const {
@@ -190,6 +207,10 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
 
 uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
     return bus->getReferenceToMemory(virtual_address);
+}
+
+void MOS6502::setProgramCounter(const uint16_t& target_pc) {
+    program_counter_ = target_pc;
 }
 
 uint8_t MOS6502::getStatusFlag(const StatusFlag& flag) const {
@@ -343,8 +364,6 @@ void MOS6502::BPL(MOS6502& cpu) {
 void MOS6502::BRK(MOS6502& cpu) {
     // There is a padding byte for BRK instruction
     cpu.program_counter_++;
-    // Make sure that CPU is not in Interrupt Mode After BRK
-    cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
 
     uint8_t pc_low_byte = cpu.program_counter_ & 0x00FF;
     uint8_t pc_high_byte = (cpu.program_counter_ & 0xFF00) >> 8;
@@ -354,12 +373,17 @@ void MOS6502::BRK(MOS6502& cpu) {
 
     // Break flag is only really "exist" when it's pushed to stack
     //   This is to distinguish between BRK and an IQR
-    cpu.setStatusFlag(StatusFlag::BREAK, 1);
-    cpu.stackPush(cpu.processor_status_.RAW_VALUE);
-    cpu.setStatusFlag(StatusFlag::BREAK, 0);
 
-    uint16_t interrupt_vector_low_byte = cpu.readMemory(0xFFFE);
-    uint16_t interrupt_vector_high_byte = cpu.readMemory(0xFFFF);
+    ProcessorStatus status_to_push = cpu.processor_status_;
+    status_to_push.BREAK = 1;
+    status_to_push.UNUSED = 1;
+    cpu.stackPush(status_to_push.RAW_VALUE);
+
+    // Make sure that CPU is not in Interrupt Mode After BRK
+    cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
+
+    uint16_t interrupt_vector_low_byte = cpu.readMemory(MOS6502_IRQ_PC_ADDRESS);
+    uint16_t interrupt_vector_high_byte = cpu.readMemory(MOS6502_IRQ_PC_ADDRESS + 1);
 
     cpu.program_counter_ = (interrupt_vector_high_byte << 8) | interrupt_vector_low_byte;
 }
@@ -515,7 +539,7 @@ void MOS6502::LSR(MOS6502& cpu) {
 }
 
 void MOS6502::NOP(MOS6502& cpu) {
-    cpu.program_counter_++;
+    // cpu.program_counter_++;
 }
 
 void MOS6502::ORA(MOS6502& cpu) {
@@ -529,17 +553,23 @@ void MOS6502::PHA(MOS6502& cpu) {
 }
 
 void MOS6502::PHP(MOS6502& cpu) {
-    cpu.stackPush(cpu.processor_status_.RAW_VALUE);
+    ProcessorStatus status_to_push = cpu.processor_status_;
+    status_to_push.BREAK = 1;
+    status_to_push.UNUSED = 1;
+    cpu.stackPush(status_to_push.RAW_VALUE);
 }
 
 void MOS6502::PLA(MOS6502& cpu) {
     cpu.accumulator_ = cpu.stackPop();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
-    cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ & 0x80);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::PLP(MOS6502& cpu) {
+    ProcessorStatus old_status = cpu.processor_status_;
     cpu.processor_status_.RAW_VALUE = cpu.stackPop();
+    cpu.processor_status_.BREAK = old_status.BREAK;
+    cpu.processor_status_.UNUSED = old_status.UNUSED;
 }
 
 void MOS6502::ROL(MOS6502& cpu) {
@@ -559,7 +589,11 @@ void MOS6502::ROR(MOS6502& cpu) {
 }
 
 void MOS6502::RTI(MOS6502& cpu) {
+    ProcessorStatus old_status = cpu.processor_status_;
     cpu.processor_status_.RAW_VALUE = cpu.stackPop();
+    cpu.processor_status_.BREAK = old_status.BREAK;
+    cpu.processor_status_.UNUSED = old_status.UNUSED;
+
     uint16_t pc_low_byte = cpu.stackPop();
     uint16_t pc_high_byte = cpu.stackPop();
     cpu.program_counter_ = (pc_high_byte << 8) | pc_low_byte;

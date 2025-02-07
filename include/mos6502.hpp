@@ -95,6 +95,13 @@ public:
     */
     uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 
+    /**
+    * @brief  Sets Program Counter Manually
+    * @param  target_pc: New program counter value
+    * @return None
+    */
+    void setProgramCounter(const uint16_t& target_pc);
+
 private:
     // Class for mos6502 address pointer using similar idea as an iterator
     class Pointer {
@@ -137,7 +144,7 @@ private:
     uint8_t x_reg_;
     uint8_t y_reg_;
 
-    union {
+    union ProcessorStatus {
         uint8_t RAW_VALUE;
         struct {
             uint8_t CARRY : 1;

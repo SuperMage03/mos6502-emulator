@@ -9,7 +9,7 @@
 #include "ram.hpp"
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
+    if (argc < 2) {
         std::cerr << "INVALID ARGUEMENTS" << std::endl;
         return 1;
     }
@@ -24,7 +24,11 @@ int main(int argc, char *argv[]) {
     MOS6502 cpu;
     RAM ram(program_file);
     BUS bus(cpu, ram);
-    
+
+    if (argc > 2) {
+        cpu.setProgramCounter(std::stoul(argv[2], nullptr, 16));
+    }
+
     // for (unsigned int i = 0; i < 30; i++) {
     while (true) {
         cpu.runCycle();

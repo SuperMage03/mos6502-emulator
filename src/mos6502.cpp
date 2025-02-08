@@ -87,8 +87,8 @@ void MOS6502::connectBUS(BUS* target_bus) {
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
-    if (program_counter_ == 0x35DB) {
-        // Counter Hit
+    if (program_counter_ == 0x0569 || program_counter_ == 0x346c) {
+        std::cout << "Success" << std::endl;
     }
 
     if (total_cycle_ran_ >= 394211) {
@@ -210,7 +210,7 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
 }
 
 uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
-    if (virtual_address == 0x0012) {
+    if (virtual_address == 0x0011) {
         // Address Retreived
     }
     return bus->getReferenceToMemory(virtual_address);
@@ -251,20 +251,20 @@ void MOS6502::stackPush(const uint8_t& data) {
 void MOS6502::ADC(MOS6502& cpu) {
     uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 
-    cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0x0000);
-    cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
-
-    // If the result sign was different from accumulator sign and accumulator sign is the same as the operand sign,
-    //   then we have an overflow
-    if (((cpu.accumulator_ ^ result) & 0x0080) && !((cpu.accumulator_ ^ *cpu.operand_address_) & 0x80)) {
-        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 1);
-    }
-    else {
-        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 0);
-    }
-    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
-    // Update the accumulator
-    cpu.accumulator_ = result & 0x00FF;
+	// The carry flag out exists in the high byte bit 0
+	cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
+	
+	// The Zero flag is set if the result is 0
+	cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0);
+	
+	// The signed Overflow flag is set based on all that up there! :D
+	cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, (~(static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(*cpu.operand_address_)) & (static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(result))) & 0x0080);
+	
+	// The negative flag is set to the most significant bit of the result
+	cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
+	
+	// Load the result into the accumulator (it's 8-bit dont forget!)
+	cpu.accumulator_ = result & 0x00FF;
 }
 
 void MOS6502::AND(MOS6502& cpu) {
@@ -622,22 +622,19 @@ void MOS6502::SBC(MOS6502& cpu) {
     // Due to the nature of subtraction, it will be subrated one more if carry is cleared
     // So, A = A - memory - (1 - C) = A + -memory - 1 + C
     // Using two's complement: A = A + (~memory + 1) - 1 + C = A + ~memory + C
-    uint16_t inverted_operand = static_cast<uint16_t>(*cpu.operand_address_) ^ 0x00FF;
-    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + inverted_operand + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 
-    cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0x0000);
-    cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
-
-    // If result's sign is different from A's and the same as the operand's
-    //   then we have an overflow
-    if (((result ^ cpu.accumulator_) & 0x0080) && !((result ^ inverted_operand) & 0x80)) {
-        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 1);
-    }
-    else {
-        cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 0);
-    }
-    cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
-    // Update the accumulator
+	// Operating in 16-bit domain to capture carry out
+	
+	// We can invert the bottom 8 bits with bitwise xor
+	uint16_t inverted_operand = static_cast<uint16_t>(*cpu.operand_address_) ^ 0x00FF;
+	// Notice this is exactly the same as addition from here!
+	uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + inverted_operand + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
+	
+    cpu.setStatusFlag(StatusFlag::CARRY, result & 0xFF00);
+	cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0);
+	cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, (result ^ static_cast<uint16_t>(cpu.accumulator_)) & (result ^ inverted_operand) & 0x0080);
+	cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
+	
     cpu.accumulator_ = result & 0x00FF;
 }
 
@@ -654,6 +651,9 @@ void MOS6502::SEI(MOS6502& cpu) {
 }
 
 void MOS6502::STA(MOS6502& cpu) {
+    if (cpu.accumulator_ == 0xc0) {
+        // Debug
+    }
     *cpu.operand_address_ = cpu.accumulator_;
 }
 

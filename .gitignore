@@ -1,5 +1,6 @@
 .DS_Store
 .vscode
 *.bin
+*.lst
 build
 MOS6502-emulator

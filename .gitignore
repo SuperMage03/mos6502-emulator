@@ -3,4 +3,5 @@
 *.bin
 *.lst
 build
+json-tests
 MOS6502-emulator

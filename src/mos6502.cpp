@@ -84,6 +84,15 @@ void MOS6502::connectBUS(BUS* target_bus) {
     reset();
 }
 
+void MOS6502::runInstruction() {
+    instruction_opcode_ = readMemory(program_counter_);
+    program_counter_++;
+
+    instruction_ = &instruction_lookup_table.at(instruction_opcode_);
+    instruction_->addressingMode(*this);
+    instruction_->operationFn(*this);
+}
+
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
@@ -720,12 +729,12 @@ void MOS6502::ZP0(MOS6502& cpu) {
 }
 
 void MOS6502::ZPX(MOS6502& cpu) {
-    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.x_reg_) & 0xFF;
+    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.x_reg_) & 0x00FF;
     cpu.program_counter_++;
 }
 
 void MOS6502::ZPY(MOS6502& cpu) {
-    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.y_reg_) & 0xFF;
+    cpu.operand_address_ = (cpu.readMemory(cpu.program_counter_) + cpu.y_reg_) & 0x00FF;
     cpu.program_counter_++;
 }
 
@@ -785,7 +794,7 @@ void MOS6502::IZX(MOS6502& cpu) {
     cpu.program_counter_++;
 
     uint16_t indirect_address_low_byte = cpu.readMemory(zero_page_adress);
-    uint16_t indirect_address_high_byte = cpu.readMemory(zero_page_adress + 1);
+    uint16_t indirect_address_high_byte = cpu.readMemory((zero_page_adress + 1) & 0x00FF);
 
     cpu.operand_address_ = (indirect_address_high_byte << 8) | indirect_address_low_byte;
 }
@@ -795,7 +804,7 @@ void MOS6502::IZY(MOS6502& cpu) {
     cpu.program_counter_++;
 
     uint16_t indirect_address_low_byte = cpu.readMemory(zero_page_adress);
-    uint16_t indirect_address_high_byte = cpu.readMemory(zero_page_adress + 1);
+    uint16_t indirect_address_high_byte = cpu.readMemory((zero_page_adress + 1) & 0x00FF);
 
     uint16_t indirect_address = ((indirect_address_high_byte << 8) | indirect_address_low_byte) + cpu.y_reg_;
 

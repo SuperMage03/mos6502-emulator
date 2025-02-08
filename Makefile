@@ -8,7 +8,7 @@ SRCEXT = cpp
 SOURCES = $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS = $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 DEPENDS = ${OBJECTS:.o=.d}
-INC = -I include
+INC = -I include -I lib
 
 .PHONY: clean
 

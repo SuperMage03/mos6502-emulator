@@ -39,6 +39,13 @@ public:
     void connectBUS(BUS* target_bus);
 
     /**
+    * @brief  Run 1 instruction of the CPU
+    * @param  None
+    * @return None
+    */
+    void runInstruction();
+
+    /**
     * @brief  Run 1 cycle of the CPU
     * @param  None
     * @return None
@@ -101,6 +108,8 @@ public:
     * @return None
     */
     void setProgramCounter(const uint16_t& target_pc);
+
+    friend class JSONTestHarness;
 
 private:
     // Class for mos6502 address pointer using similar idea as an iterator

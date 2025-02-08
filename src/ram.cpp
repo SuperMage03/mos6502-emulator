@@ -1,7 +1,7 @@
 #include "ram.hpp"
 
 RAM::RAM(const uint32_t& byte_size): byte_size_(byte_size), memory_block_(std::make_unique<uint8_t[]>(byte_size)) {
-    for (uint16_t i = 0; i < byte_size_; i++) {
+    for (uint32_t i = 0; i < byte_size_; i++) {
         memory_block_[i] = 0x00;
     }
 }

@@ -105,7 +105,7 @@ void MOS6502::runInstruction() {
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
-    // Fetch new instruction (Cost 1 cycle)
+    // Fetch a new instruction when the current instruction is done
     if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
         program_counter_++;
@@ -123,7 +123,7 @@ void MOS6502::runCycle() {
             instruction_cycle_remaining_ += additional_cycles;
         }
     }
-    
+
     instruction_cycle_remaining_--;
 }
 

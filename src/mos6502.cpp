@@ -85,8 +85,8 @@ void MOS6502::connectBUS(BUS* target_bus) {
 void MOS6502::runInstruction() {
     instruction_opcode_ = readMemory(program_counter_);
     program_counter_++;
-    instruction_ = &instruction_lookup_table.at(instruction_opcode_);
 
+    instruction_ = &instruction_lookup_table.at(instruction_opcode_);
     instruction_cycle_remaining_ = instruction_->cycles;
 
     // Getting the additional cycles from the addressing mode
@@ -111,18 +111,20 @@ void MOS6502::runCycle() {
         program_counter_++;
 
         instruction_ = &instruction_lookup_table.at(instruction_opcode_);
-        instruction_->addressingMode(*this);
         instruction_cycle_remaining_ = instruction_->cycles;
-        return;
-    }
 
-    instruction_cycle_remaining_--;
-    
-    // If there are no more cycles, apply the operation function
-    if ((instruction_ != nullptr) && (instruction_cycle_remaining_ == 0)) {
-        instruction_->operationFn(*this);
-        instruction_ = nullptr;
+        // Getting the additional cycles from the addressing mode
+        uint8_t additional_cycles = instruction_->addressingMode(*this);
+        // Note calling instruction_->operationFn(*this) can change instruction_cycle_remaining_
+        //   This is only done by branching instructions since their additional cycles are independent of the addressing mode
+        CycleType instruction_cycle_mode = instruction_->operationFn(*this);
+
+        if (instruction_cycle_mode == CycleType::ACCEPTS_ADDITIONAL_CYCLES) {
+            instruction_cycle_remaining_ += additional_cycles;
+        }
     }
+    
+    instruction_cycle_remaining_--;
 }
 
 // ------------------------ EXTERNAL INTERRUPTS --------------------------------

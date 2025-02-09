@@ -89,20 +89,11 @@ void MOS6502::runInstruction() {
     program_counter_++;
 
     instruction_ = &instruction_lookup_table.at(instruction_opcode_);
-    instruction_->addressingMode(*this);
     instruction_->operationFn(*this);
 }
 
 void MOS6502::runCycle() {
     total_cycle_ran_++;
-
-    if (program_counter_ == 0x0569 || program_counter_ == 0x346c) {
-        std::cout << "Success" << std::endl;
-    }
-
-    if (total_cycle_ran_ >= 394211) {
-        // Counter Hit
-    }
 
     // Fetch new instruction (Cost 1 cycle)
     if (instruction_cycle_remaining_ == 0) {
@@ -110,7 +101,6 @@ void MOS6502::runCycle() {
         program_counter_++;
 
         instruction_ = &instruction_lookup_table.at(instruction_opcode_);
-        instruction_->addressingMode(*this);
         instruction_cycle_remaining_ = instruction_->cycles;
         return;
     }
@@ -120,9 +110,6 @@ void MOS6502::runCycle() {
     // If there are no more cycles, apply the operation function
     if ((instruction_ != nullptr) && (instruction_cycle_remaining_ == 0)) {
         instruction_->operationFn(*this);
-        std::cout << "Executed " << instruction_->name << std::endl;
-        outputCurrentState(std::cout);
-        std::cout << std::endl;
 
         // This is for stepping one instructions at a time
         // std::string garbage;
@@ -258,6 +245,9 @@ void MOS6502::stackPush(const uint8_t& data) {
 // ---------------------- INSTRUCTION IMPLEMENTATIONS --------------------------
 
 void MOS6502::ADC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 
 	// The carry flag out exists in the high byte bit 0
@@ -277,12 +267,18 @@ void MOS6502::ADC(MOS6502& cpu) {
 }
 
 void MOS6502::AND(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ &= *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0x00);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::ASL(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+    
     uint8_t result = *cpu.operand_address_ << 0x01;
 
     cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
@@ -293,6 +289,9 @@ void MOS6502::ASL(MOS6502& cpu) {
 }
 
 void MOS6502::BCC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (!cpu.getStatusFlag(StatusFlag::CARRY)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -306,6 +305,9 @@ void MOS6502::BCC(MOS6502& cpu) {
 }
 
 void MOS6502::BCS(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (cpu.getStatusFlag(StatusFlag::CARRY)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -319,6 +321,9 @@ void MOS6502::BCS(MOS6502& cpu) {
 }
 
 void MOS6502::BEQ(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (cpu.getStatusFlag(StatusFlag::ZERO)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -332,6 +337,9 @@ void MOS6502::BEQ(MOS6502& cpu) {
 }
 
 void MOS6502::BIT(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t result = *cpu.operand_address_ & cpu.accumulator_;
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0x00);
     cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, *cpu.operand_address_ & 0x40);
@@ -339,6 +347,9 @@ void MOS6502::BIT(MOS6502& cpu) {
 }
 
 void MOS6502::BMI(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (cpu.getStatusFlag(StatusFlag::NEGATIVE)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -352,6 +363,9 @@ void MOS6502::BMI(MOS6502& cpu) {
 }
 
 void MOS6502::BNE(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (!cpu.getStatusFlag(StatusFlag::ZERO)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -369,6 +383,9 @@ void MOS6502::BNE(MOS6502& cpu) {
 }
 
 void MOS6502::BPL(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (!cpu.getStatusFlag(StatusFlag::NEGATIVE)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -382,6 +399,9 @@ void MOS6502::BPL(MOS6502& cpu) {
 }
 
 void MOS6502::BRK(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t pc_low_byte = cpu.program_counter_ & 0x00FF;
     uint8_t pc_high_byte = (cpu.program_counter_ & 0xFF00) >> 8;
 
@@ -410,6 +430,9 @@ void MOS6502::BRK(MOS6502& cpu) {
 }
 
 void MOS6502::BVC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (!cpu.getStatusFlag(StatusFlag::OVERFLOW_FLAG)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -423,6 +446,9 @@ void MOS6502::BVC(MOS6502& cpu) {
 }
 
 void MOS6502::BVS(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (cpu.getStatusFlag(StatusFlag::OVERFLOW_FLAG)) {
         uint16_t new_pc_address = cpu.program_counter_ + cpu.relative_addressing_offset_;
         // Branch success adds 1 cycle
@@ -436,22 +462,37 @@ void MOS6502::BVS(MOS6502& cpu) {
 }
 
 void MOS6502::CLC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::CARRY, 0);
 }
 
 void MOS6502::CLD(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+    
     cpu.setStatusFlag(StatusFlag::DECIMAL_MODE, 0);
 }
 
 void MOS6502::CLI(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 0);
 }
 
 void MOS6502::CLV(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, 0);
 }
 
 void MOS6502::CMP(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     int16_t result = cpu.accumulator_ - *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -459,6 +500,9 @@ void MOS6502::CMP(MOS6502& cpu) {
 }
 
 void MOS6502::CPX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     int16_t result = cpu.x_reg_ - *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -466,6 +510,9 @@ void MOS6502::CPX(MOS6502& cpu) {
 }
 
 void MOS6502::CPY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     int16_t result = cpu.y_reg_ - *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -473,6 +520,9 @@ void MOS6502::CPY(MOS6502& cpu) {
 }
 
 void MOS6502::DEC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t& operand = *cpu.operand_address_; // For debug
     (*cpu.operand_address_)--;
     cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
@@ -480,42 +530,63 @@ void MOS6502::DEC(MOS6502& cpu) {
 }
 
 void MOS6502::DEX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.x_reg_--;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::DEY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.y_reg_--;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
 }
 
 void MOS6502::EOR(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ ^= *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::INC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     (*cpu.operand_address_)++;
     cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
 }
 
 void MOS6502::INX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.x_reg_++;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::INY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.y_reg_++;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
 }
 
 void MOS6502::JMP(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
     if (std::holds_alternative<uint16_t>(jump_location)) {
         cpu.program_counter_ = std::get<uint16_t>(jump_location);
@@ -523,6 +594,9 @@ void MOS6502::JMP(MOS6502& cpu) {
 }
 
 void MOS6502::JSR(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
     if (std::holds_alternative<uint16_t>(jump_location)) {
         uint16_t return_address = cpu.program_counter_ - 1;
@@ -535,24 +609,36 @@ void MOS6502::JSR(MOS6502& cpu) {
 }
 
 void MOS6502::LDA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ = *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::LDX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.x_reg_ = *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::LDY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.y_reg_ = *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
 }
 
 void MOS6502::LSR(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t result = *cpu.operand_address_ >> 1;
     cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -561,20 +647,32 @@ void MOS6502::LSR(MOS6502& cpu) {
 }
 
 void MOS6502::NOP(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     // cpu.program_counter_++;
 }
 
 void MOS6502::ORA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ |= *cpu.operand_address_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::PHA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.stackPush(cpu.accumulator_);
 }
 
 void MOS6502::PHP(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     ProcessorStatus status_to_push = cpu.processor_status_;
     status_to_push.BREAK = 1;
     status_to_push.UNUSED = 1;
@@ -582,12 +680,18 @@ void MOS6502::PHP(MOS6502& cpu) {
 }
 
 void MOS6502::PLA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ = cpu.stackPop();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::PLP(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     ProcessorStatus old_status = cpu.processor_status_;
     cpu.processor_status_.RAW_VALUE = cpu.stackPop();
     cpu.processor_status_.BREAK = old_status.BREAK;
@@ -595,6 +699,9 @@ void MOS6502::PLP(MOS6502& cpu) {
 }
 
 void MOS6502::ROL(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t result = (*cpu.operand_address_ << 1) | cpu.getStatusFlag(StatusFlag::CARRY);
     cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -603,6 +710,9 @@ void MOS6502::ROL(MOS6502& cpu) {
 }
 
 void MOS6502::ROR(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint8_t result = (*cpu.operand_address_ >> 1) | (cpu.getStatusFlag(StatusFlag::CARRY) << 7);
     cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
@@ -611,6 +721,9 @@ void MOS6502::ROR(MOS6502& cpu) {
 }
 
 void MOS6502::RTI(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     ProcessorStatus old_status = cpu.processor_status_;
     cpu.processor_status_.RAW_VALUE = cpu.stackPop();
     cpu.processor_status_.BREAK = old_status.BREAK;
@@ -622,12 +735,18 @@ void MOS6502::RTI(MOS6502& cpu) {
 }
 
 void MOS6502::RTS(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     uint16_t pc_low_byte = cpu.stackPop();
     uint16_t pc_high_byte = cpu.stackPop();
     cpu.program_counter_ = ((pc_high_byte << 8) | pc_low_byte) + 1;
 }
 
 void MOS6502::SBC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     // Due to the nature of subtraction, it will be subrated one more if carry is cleared
     // So, A = A - memory - (1 - C) = A + -memory - 1 + C
     // Using two's complement: A = A + (~memory + 1) - 1 + C = A + ~memory + C
@@ -648,18 +767,30 @@ void MOS6502::SBC(MOS6502& cpu) {
 }
 
 void MOS6502::SEC(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::CARRY, 1);
 }
 
 void MOS6502::SED(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::DECIMAL_MODE, 1);
 }
 
 void MOS6502::SEI(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.setStatusFlag(StatusFlag::INTERRUPT_DISABLE, 1);
 }
 
 void MOS6502::STA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     if (cpu.accumulator_ == 0xc0) {
         // Debug
     }
@@ -667,48 +798,75 @@ void MOS6502::STA(MOS6502& cpu) {
 }
 
 void MOS6502::STX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     *cpu.operand_address_ = cpu.x_reg_;
 }
 
 void MOS6502::STY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     *cpu.operand_address_ = cpu.y_reg_;
 }
 
 void MOS6502::TAX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.x_reg_ = cpu.accumulator_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::TAY(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.y_reg_ = cpu.accumulator_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
 }
 
 void MOS6502::TSX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.x_reg_ = cpu.stack_ptr_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
 }
 
 void MOS6502::TXA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ = cpu.x_reg_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::TXS(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.stack_ptr_ = cpu.x_reg_;
 }
 
 void MOS6502::TYA(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     cpu.accumulator_ = cpu.y_reg_;
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
 }
 
 void MOS6502::XXX(MOS6502& cpu) {
+    // Fetch Operand
+    cpu.instruction_->addressingMode(cpu);
+
     // DO NOTHING
 }
 

@@ -1,5 +1,4 @@
 #include "json-test-harness.hpp"
-#include "mos6502.hpp"
 // Standard Library Includes
 #include <iostream>
 #include <fstream>

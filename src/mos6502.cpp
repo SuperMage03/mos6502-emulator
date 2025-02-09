@@ -1,8 +1,6 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
-#include <cstdint>
-#include <iostream>
 // Project Headers
 #include "bus.hpp"
 
@@ -72,7 +70,7 @@ const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::
     { "BEQ", MOS6502::BEQ, MOS6502::REL, 2 },{ "SBC", MOS6502::SBC, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ZPX, 4 },{ "INC", MOS6502::INC, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "SED", MOS6502::SED, MOS6502::IMP, 2 },{ "SBC", MOS6502::SBC, MOS6502::ABY, 4 },{ "NOP", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ABX, 4 },{ "INC", MOS6502::INC, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
 }};
 
-MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accumulator_(0), 
+MOS6502::MOS6502(): bus(nullptr), program_counter_(MOS6502_STARTING_PC_ADDRESS), stack_ptr_(0), accumulator_(0), 
                     x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0b00110110}),
                     total_cycle_ran_(0), instruction_(nullptr), instruction_opcode_(0x00), 
                     instruction_cycle_remaining_(0), operand_address_(*this, 0x00), 
@@ -96,14 +94,6 @@ void MOS6502::runInstruction() {
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
-    if (program_counter_ == 0x0569 || program_counter_ == 0x346c) {
-        std::cout << "Success" << std::endl;
-    }
-
-    if (total_cycle_ran_ >= 394211) {
-        // Counter Hit
-    }
-
     // Fetch new instruction (Cost 1 cycle)
     if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
@@ -120,17 +110,11 @@ void MOS6502::runCycle() {
     // If there are no more cycles, apply the operation function
     if ((instruction_ != nullptr) && (instruction_cycle_remaining_ == 0)) {
         instruction_->operationFn(*this);
-        std::cout << "Executed " << instruction_->name << std::endl;
-        outputCurrentState(std::cout);
-        std::cout << std::endl;
-
-        // This is for stepping one instructions at a time
-        // std::string garbage;
-        // std::getline(std::cin, garbage);
-
         instruction_ = nullptr;
     }
 }
+
+// ------------------------ EXTERNAL INTERRUPTS --------------------------------
 
 void MOS6502::reset() {
     // MOS6502 Registers
@@ -198,6 +182,8 @@ void MOS6502::nmi() {
     program_counter_ = (nmi_pc_high_byte << 8) | nmi_pc_low_byte;
 }
 
+// ------------------------ INTERNAL FUNCTIONS ---------------------------------
+
 void MOS6502::outputCurrentState(std::ostream &out) const {
     out << std::hex;
     out << "Program Counter: 0x" << program_counter_ << std::endl;
@@ -219,9 +205,6 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
 }
 
 uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
-    if (virtual_address == 0x0011) {
-        // Address Retreived
-    }
     return bus->getReferenceToMemory(virtual_address);
 }
 
@@ -473,7 +456,6 @@ void MOS6502::CPY(MOS6502& cpu) {
 }
 
 void MOS6502::DEC(MOS6502& cpu) {
-    uint8_t& operand = *cpu.operand_address_; // For debug
     (*cpu.operand_address_)--;
     cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
@@ -660,9 +642,6 @@ void MOS6502::SEI(MOS6502& cpu) {
 }
 
 void MOS6502::STA(MOS6502& cpu) {
-    if (cpu.accumulator_ == 0xc0) {
-        // Debug
-    }
     *cpu.operand_address_ = cpu.accumulator_;
 }
 

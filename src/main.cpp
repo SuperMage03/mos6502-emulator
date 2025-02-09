@@ -1,8 +1,6 @@
 // Standard Library Headers
-#include <fstream>
 #include <iostream>
-#include <chrono>
-#include <thread>
+#include <sstream>
 // Project Headers
 #include "bus.hpp"
 #include "mos6502.hpp"
@@ -22,8 +20,12 @@ int main(int argc, char *argv[]) {
     
     for (unsigned int i = 0; i < MOS6502::instruction_lookup_table.size(); i++) {
         const MOS6502::Instruction& instruction = MOS6502::instruction_lookup_table.at(i);
+        // Skip Unofficial OPCODE Tests
         if (instruction.name == "???") continue;
 
+        // Download JSON tests from https://github.com/SingleStepTests/ProcessorTests/tree/main/nes6502/v1
+        //   Create a folder named "json-tests" and place all NES 6502 tests in there and run the program
+        //   Program should exit with code 0 if succeed and 1 if failed
         JSONTestHarness json_test_harness{cpu, "json-tests/" + uint8_to_hex_string(i) + ".json"};
         while (true) {
             JSONTestHarness::Result step_result = json_test_harness.singleInstructionStep();
@@ -35,34 +37,5 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-    // if (argc < 2) {
-    //     std::cerr << "INVALID ARGUEMENTS" << std::endl;
-    //     return 1;
-    // }
-
-    // std::ifstream program_file;
-    // program_file.open(argv[1], std::ios::binary);
-    // if (!program_file) {
-    //     std::cerr << "INVALID PROGRAM FILE PROVIDED" << std::endl;
-    //     return 1;
-    // }
-
-    // MOS6502 cpu;
-    // RAM ram(program_file);
-    // BUS bus(cpu, ram);
-
-    // if (argc > 2) {
-    //     cpu.setProgramCounter(std::stoul(argv[2], nullptr, 16));
-    // }
-
-    // // for (unsigned int i = 0; i < 30; i++) {
-    // while (true) {
-    //     cpu.runCycle();
-    //     // cpu.outputCurrentState(std::cout);
-    //     // std::cout << std::endl;
-    //     std::this_thread::sleep_for(std::chrono::nanoseconds(std::lrint(MOS6502_CLOCK_PERIOD)));
-    // }
-
     return 0;
 }

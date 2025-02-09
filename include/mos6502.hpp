@@ -19,10 +19,15 @@ class BUS;
 
 class MOS6502 {
 public:
+    enum class CycleType {
+        NO_ADDITIONAL_CYCLES,
+        ACCEPTS_ADDITIONAL_CYCLES,
+    };
+
     struct Instruction {
         const std::string name;
-        void (*operationFn)(MOS6502& cpu);
-        void (*addressingMode)(MOS6502& cpu);
+        CycleType (*operationFn)(MOS6502& cpu);
+        uint8_t (*addressingMode)(MOS6502& cpu);
         uint8_t cycles;
     };
 
@@ -133,7 +138,7 @@ private:
         friend class MOS6502;
     };
 
-    enum StatusFlag {
+    enum class StatusFlag {
         CARRY = 0,
         ZERO,
         INTERRUPT_DISABLE,
@@ -211,487 +216,485 @@ private:
     /**
     * @brief  Executes ADC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void ADC(MOS6502& cpu);
+    static CycleType ADC(MOS6502& cpu);
 
     /**
     * @brief  Executes AND Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void AND(MOS6502& cpu);
+    static CycleType AND(MOS6502& cpu);
 
     /**
     * @brief  Executes ASL Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void ASL(MOS6502& cpu);
+    static CycleType ASL(MOS6502& cpu);
 
     /**
     * @brief  Executes BCC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BCC(MOS6502& cpu);
+    static CycleType BCC(MOS6502& cpu);
 
     /**
     * @brief  Executes BCS Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BCS(MOS6502& cpu);
+    static CycleType BCS(MOS6502& cpu);
 
     /**
     * @brief  Executes BEQ Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BEQ(MOS6502& cpu);
+    static CycleType BEQ(MOS6502& cpu);
 
     /**
     * @brief  Executes BIT Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BIT(MOS6502& cpu);
+    static CycleType BIT(MOS6502& cpu);
 
     /**
     * @brief  Executes BMI Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BMI(MOS6502& cpu);
+    static CycleType BMI(MOS6502& cpu);
 
     /**
     * @brief  Executes BNE Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BNE(MOS6502& cpu);
+    static CycleType BNE(MOS6502& cpu);
 
     /**
     * @brief  Executes BPL Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BPL(MOS6502& cpu);
+    static CycleType BPL(MOS6502& cpu);
 
     /**
     * @brief  Executes BRK Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BRK(MOS6502& cpu);
+    static CycleType BRK(MOS6502& cpu);
 
     /**
     * @brief  Executes BVC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BVC(MOS6502& cpu);
+    static CycleType BVC(MOS6502& cpu);
 
     /**
     * @brief  Executes BVS Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void BVS(MOS6502& cpu);
+    static CycleType BVS(MOS6502& cpu);
 
     /**
     * @brief  Executes CLC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CLC(MOS6502& cpu);
+    static CycleType CLC(MOS6502& cpu);
 
     /**
     * @brief  Executes CLD Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CLD(MOS6502& cpu);
+    static CycleType CLD(MOS6502& cpu);
 
     /**
     * @brief  Executes CLI Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CLI(MOS6502& cpu);
+    static CycleType CLI(MOS6502& cpu);
 
     /**
     * @brief  Executes CLV Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CLV(MOS6502& cpu);
+    static CycleType CLV(MOS6502& cpu);
 
     /**
     * @brief  Executes CMP Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CMP(MOS6502& cpu);
+    static CycleType CMP(MOS6502& cpu);
 
     /**
     * @brief  Executes CPX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CPX(MOS6502& cpu);
+    static CycleType CPX(MOS6502& cpu);
 
     /**
     * @brief  Executes CPY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void CPY(MOS6502& cpu);
+    static CycleType CPY(MOS6502& cpu);
 
     /**
     * @brief  Executes DEC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void DEC(MOS6502& cpu);
+    static CycleType DEC(MOS6502& cpu);
     
     /**
     * @brief  Executes DEX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void DEX(MOS6502& cpu);
+    static CycleType DEX(MOS6502& cpu);
     
     /**
     * @brief  Executes DEY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void DEY(MOS6502& cpu);
+    static CycleType DEY(MOS6502& cpu);
     
     /**
     * @brief  Executes EOR Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void EOR(MOS6502& cpu);
+    static CycleType EOR(MOS6502& cpu);
     
     /**
     * @brief  Executes INC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void INC(MOS6502& cpu);
+    static CycleType INC(MOS6502& cpu);
     
     /**
     * @brief  Executes INX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void INX(MOS6502& cpu);
+    static CycleType INX(MOS6502& cpu);
     
     /**
     * @brief  Executes INY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void INY(MOS6502& cpu);
+    static CycleType INY(MOS6502& cpu);
     
     /**
     * @brief  Executes JMP Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void JMP(MOS6502& cpu);
+    static CycleType JMP(MOS6502& cpu);
     
     /**
     * @brief  Executes JSR Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void JSR(MOS6502& cpu);
+    static CycleType JSR(MOS6502& cpu);
     
     /**
     * @brief  Executes LDA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void LDA(MOS6502& cpu);
+    static CycleType LDA(MOS6502& cpu);
     
     /**
     * @brief  Executes LDX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void LDX(MOS6502& cpu);
+    static CycleType LDX(MOS6502& cpu);
     
     /**
     * @brief  Executes LDY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void LDY(MOS6502& cpu);
+    static CycleType LDY(MOS6502& cpu);
     
     /**
     * @brief  Executes LSR Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void LSR(MOS6502& cpu);
+    static CycleType LSR(MOS6502& cpu);
     
     /**
     * @brief  Executes NOP Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void NOP(MOS6502& cpu);
+    static CycleType NOP(MOS6502& cpu);
     
     /**
     * @brief  Executes ORA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void ORA(MOS6502& cpu);
+    static CycleType ORA(MOS6502& cpu);
     
     /**
     * @brief  Executes PHA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void PHA(MOS6502& cpu);
+    static CycleType PHA(MOS6502& cpu);
     
     /**
-    * @brief  Executes PHA Instruction
+    * @brief  Executes PHP Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void PHP(MOS6502& cpu);
+    static CycleType PHP(MOS6502& cpu);
     
     /**
     * @brief  Executes PLA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void PLA(MOS6502& cpu);
+    static CycleType PLA(MOS6502& cpu);
     
     /**
     * @brief  Executes PLP Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void PLP(MOS6502& cpu);
+    static CycleType PLP(MOS6502& cpu);
     
     /**
     * @brief  Executes ROL Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void ROL(MOS6502& cpu);
+    static CycleType ROL(MOS6502& cpu);
 
     /**
     * @brief  Executes ROR Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void ROR(MOS6502& cpu);
+    static CycleType ROR(MOS6502& cpu);
     
     /**
     * @brief  Executes RTI Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void RTI(MOS6502& cpu);
+    static CycleType RTI(MOS6502& cpu);
     
     /**
     * @brief  Executes RTS Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void RTS(MOS6502& cpu);
+    static CycleType RTS(MOS6502& cpu);
     
     /**
     * @brief  Executes SBC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void SBC(MOS6502& cpu);
+    static CycleType SBC(MOS6502& cpu);
     
     /**
     * @brief  Executes SEC Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void SEC(MOS6502& cpu);
+    static CycleType SEC(MOS6502& cpu);
     
     /**
     * @brief  Executes SED Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void SED(MOS6502& cpu);
+    static CycleType SED(MOS6502& cpu);
     
     /**
     * @brief  Executes SEI Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void SEI(MOS6502& cpu);
+    static CycleType SEI(MOS6502& cpu);
     
     /**
     * @brief  Executes STA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void STA(MOS6502& cpu);
+    static CycleType STA(MOS6502& cpu);
     
     /**
     * @brief  Executes STX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void STX(MOS6502& cpu);
+    static CycleType STX(MOS6502& cpu);
     
     /**
     * @brief  Executes STY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void STY(MOS6502& cpu);
+    static CycleType STY(MOS6502& cpu);
     
     /**
     * @brief  Executes TAX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TAX(MOS6502& cpu);
+    static CycleType TAX(MOS6502& cpu);
     
     /**
     * @brief  Executes TAY Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TAY(MOS6502& cpu);
+    static CycleType TAY(MOS6502& cpu);
     
     /**
     * @brief  Executes TSX Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TSX(MOS6502& cpu);
+    static CycleType TSX(MOS6502& cpu);
     
     /**
     * @brief  Executes TXA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TXA(MOS6502& cpu);
+    static CycleType TXA(MOS6502& cpu);
     
     /**
     * @brief  Executes TXS Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TXS(MOS6502& cpu);
+    static CycleType TXS(MOS6502& cpu);
 
     /**
     * @brief  Executes TYA Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void TYA(MOS6502& cpu);
+    static CycleType TYA(MOS6502& cpu);
 
     /**
     * @brief  Executes Unofficial Instruction
     * @param  cpu: Target CPU
-    * @return None
+    * @return CycleType of this instruction
     */
-    static void XXX(MOS6502& cpu);
+    static CycleType XXX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Implicit Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void IMP(MOS6502& cpu);
+    static uint8_t IMP(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Immediate Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void IMM(MOS6502& cpu);
+    static uint8_t IMM(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ZP0(MOS6502& cpu);
+    static uint8_t ZP0(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page X Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ZPX(MOS6502& cpu);
+    static uint8_t ZPX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Zero Page Y Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ZPY(MOS6502& cpu);
+    static uint8_t ZPY(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Relative Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void REL(MOS6502& cpu);
-
+    static uint8_t REL(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Absolute Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ABS(MOS6502& cpu);
-
+    static uint8_t ABS(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Absolute X Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ABX(MOS6502& cpu);
+    static uint8_t ABX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Absolute Y Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void ABY(MOS6502& cpu);
+    static uint8_t ABY(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void IND(MOS6502& cpu);
+    static uint8_t IND(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect X Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void IZX(MOS6502& cpu);
+    static uint8_t IZX(MOS6502& cpu);
 
     /**
     * @brief  Populate Emulated Data Path Variables Using Indirect Y Addressing Mode
     * @param  cpu: Target CPU
-    * @return None
+    * @return Additional cycles introduced by this addressing mode
     */
-    static void IZY(MOS6502& cpu);
+    static uint8_t IZY(MOS6502& cpu);
 };
 
 #endif

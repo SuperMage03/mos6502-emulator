@@ -14,6 +14,8 @@ JSONTestHarness::Result JSONTestHarness::singleInstructionStep() {
         return Result::ALL_TESTS_PASSED;
     }
     
+    uint64_t old_cycle = cpu_.total_cycle_ran_;
+
     const auto& cur_instruction_test = test_json_[instructions_tested_];
     const auto& cur_instruction_test_initial = cur_instruction_test["initial"];
     const auto& cur_instruction_test_final = cur_instruction_test["final"];
@@ -30,8 +32,13 @@ JSONTestHarness::Result JSONTestHarness::singleInstructionStep() {
     }
 
     cpu_.runInstruction();
-
     std::cout << "Executed Instruction " << cur_instruction_test["name"] << std::endl;
+
+    if (cpu_.total_cycle_ran_ - old_cycle != cur_instruction_test["cycles"].size()) {
+        std::cout << "Unexpected Cycle Count" << std::endl;
+        std::cout << "Got " << cpu_.total_cycle_ran_ - old_cycle << " Expected " << cur_instruction_test["cycles"].size() << std::endl;
+        return Result::TEST_FAILED;
+    }
 
     if (cpu_.program_counter_ != cur_instruction_test_final["pc"]) {
         std::cout << "Unexpected Program Counter: " << cpu_.program_counter_ << std::endl;

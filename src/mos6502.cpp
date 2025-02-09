@@ -1,8 +1,6 @@
 #include "mos6502.hpp"
 // Stardard Library Headers
 #include <bitset>
-#include <cstdint>
-#include <iostream>
 // Project Headers
 #include "bus.hpp"
 
@@ -11,31 +9,47 @@
 MOS6502::Pointer::Pointer(MOS6502& cpu, const uint16_t& virtual_address): 
     cpu_{cpu}, location_to_point{std::in_place_type<uint16_t>, virtual_address} {}
 
-MOS6502::Pointer::Pointer(MOS6502& cpu, const MOS6502::Pointer::Register& target_register): 
-    cpu_{cpu}, location_to_point{std::in_place_type<MOS6502::Pointer::Register>, target_register} {}
+MOS6502::Pointer::Pointer(MOS6502& cpu, const MOS6502::Pointer::SpecialMode& target_register): 
+    cpu_{cpu}, location_to_point{std::in_place_type<MOS6502::Pointer::SpecialMode>, target_register} {}
 
-const std::variant<uint16_t, MOS6502::Pointer::Register>& MOS6502::Pointer::get() const {
-    return location_to_point;
+uint16_t MOS6502::Pointer::getAddress() const {
+    if (std::holds_alternative<uint16_t>(location_to_point)) {
+        return std::get<uint16_t>(location_to_point);
+    }
+
+    switch (std::get<SpecialMode>(location_to_point)) {
+        case SpecialMode::ABSOLUTE_ADDRESSING_MODE: {
+            // This Special Mode will look at where the Absolute values are at in the program
+            //   and pull it directly from the program location
+            uint16_t address_low_byte = cpu_.readMemory(special_mode_value);
+            uint16_t address_high_byte = cpu_.readMemory(special_mode_value + 1);
+            return (address_high_byte << 8) | address_low_byte;
+        }
+        default: {
+            // Dangerous Behaviour! Might need to throw error for this.
+            return 0;
+        }
+    }
 }
 
 void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
     location_to_point = virtual_address;
 }
 
-void MOS6502::Pointer::operator=(const MOS6502::Pointer::Register& target_register) {
-    location_to_point = target_register;
+void MOS6502::Pointer::operator=(const MOS6502::Pointer::SpecialMode& special_mode) {
+    location_to_point = special_mode;
+    if (special_mode == MOS6502::Pointer::SpecialMode::ABSOLUTE_ADDRESSING_MODE) {
+        special_mode_value = cpu_.program_counter_;
+    }
 }
 
 uint8_t& MOS6502::Pointer::operator*() const {
-    // Holds Virtual Memory Address
-    if (std::holds_alternative<uint16_t>(location_to_point)) {
-        return cpu_.getReferenceToMemory(std::get<uint16_t>(location_to_point));
+    // If it's in the ACCUMULATOR SPECIAL MODE, then we give a reference to the accumulator
+    if (std::holds_alternative<SpecialMode>(location_to_point) && 
+        (std::get<SpecialMode>(location_to_point) == SpecialMode::ACCUMULATOR)) {
+        return cpu_.accumulator_;
     }
-    // Holds "Address" for Register
-    switch (std::get<MOS6502::Pointer::Register>(location_to_point)) {
-        case MOS6502::Pointer::Register::ACCUMULATOR:
-            return cpu_.accumulator_;
-    }
+    return cpu_.getReferenceToMemory(getAddress());
 }
 
 MOS6502::Pointer& MOS6502::Pointer::operator++() {
@@ -72,7 +86,7 @@ const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::
     { "BEQ", MOS6502::BEQ, MOS6502::REL, 2 },{ "SBC", MOS6502::SBC, MOS6502::IZY, 5 },{ "???", MOS6502::XXX, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 8 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ZPX, 4 },{ "INC", MOS6502::INC, MOS6502::ZPX, 6 },{ "???", MOS6502::XXX, MOS6502::IMP, 6 },{ "SED", MOS6502::SED, MOS6502::IMP, 2 },{ "SBC", MOS6502::SBC, MOS6502::ABY, 4 },{ "NOP", MOS6502::NOP, MOS6502::IMP, 2 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },{ "???", MOS6502::NOP, MOS6502::IMP, 4 },{ "SBC", MOS6502::SBC, MOS6502::ABX, 4 },{ "INC", MOS6502::INC, MOS6502::ABX, 7 },{ "???", MOS6502::XXX, MOS6502::IMP, 7 },
 }};
 
-MOS6502::MOS6502(): bus(nullptr), program_counter_(0xFFFC), stack_ptr_(0), accumulator_(0), 
+MOS6502::MOS6502(): bus(nullptr), program_counter_(MOS6502_STARTING_PC_ADDRESS), stack_ptr_(0), accumulator_(0), 
                     x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0b00110110}),
                     total_cycle_ran_(0), instruction_(nullptr), instruction_opcode_(0x00), 
                     instruction_cycle_remaining_(0), operand_address_(*this, 0x00), 
@@ -96,14 +110,6 @@ void MOS6502::runInstruction() {
 void MOS6502::runCycle() {
     total_cycle_ran_++;
 
-    if (program_counter_ == 0x0569 || program_counter_ == 0x346c) {
-        std::cout << "Success" << std::endl;
-    }
-
-    if (total_cycle_ran_ >= 394211) {
-        // Counter Hit
-    }
-
     // Fetch new instruction (Cost 1 cycle)
     if (instruction_cycle_remaining_ == 0) {
         instruction_opcode_ = readMemory(program_counter_);
@@ -120,9 +126,6 @@ void MOS6502::runCycle() {
     // If there are no more cycles, apply the operation function
     if ((instruction_ != nullptr) && (instruction_cycle_remaining_ == 0)) {
         instruction_->operationFn(*this);
-        std::cout << "Executed " << instruction_->name << std::endl;
-        outputCurrentState(std::cout);
-        std::cout << std::endl;
 
         // This is for stepping one instructions at a time
         // std::string garbage;
@@ -516,22 +519,17 @@ void MOS6502::INY(MOS6502& cpu) {
 }
 
 void MOS6502::JMP(MOS6502& cpu) {
-    const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
-    if (std::holds_alternative<uint16_t>(jump_location)) {
-        cpu.program_counter_ = std::get<uint16_t>(jump_location);
-    }
+    cpu.program_counter_ = cpu.operand_address_.getAddress();
 }
 
 void MOS6502::JSR(MOS6502& cpu) {
-    const std::variant<uint16_t, MOS6502::Pointer::Register>& jump_location = cpu.operand_address_.get();
-    if (std::holds_alternative<uint16_t>(jump_location)) {
-        uint16_t return_address = cpu.program_counter_ - 1;
-        uint8_t return_address_high_byte = (return_address & 0xFF00) >> 8;
-        uint8_t return_address_low_byte = return_address & 0x00FF;
-        cpu.stackPush(return_address_high_byte);
-        cpu.stackPush(return_address_low_byte);
-        cpu.program_counter_ = std::get<uint16_t>(jump_location);
-    }
+    uint16_t return_address = cpu.program_counter_ - 1;
+    uint8_t return_address_high_byte = (return_address >> 8) & 0x00FF;
+    uint8_t return_address_low_byte = return_address & 0x00FF;
+    cpu.stackPush(return_address_high_byte);
+    // Weird behaviour that program pushes the high byte then changes the counter then low byte
+    cpu.program_counter_ = cpu.operand_address_.getAddress();
+    cpu.stackPush(return_address_low_byte);
 }
 
 void MOS6502::LDA(MOS6502& cpu) {
@@ -715,7 +713,7 @@ void MOS6502::XXX(MOS6502& cpu) {
 // -------------------- ADDRESSING MODE IMPLEMENTATIONS ------------------------
 
 void MOS6502::IMP(MOS6502& cpu) {
-    cpu.operand_address_ = Pointer::Register::ACCUMULATOR;
+    cpu.operand_address_ = Pointer::SpecialMode::ACCUMULATOR;
 }
 
 void MOS6502::IMM(MOS6502& cpu) {
@@ -745,12 +743,8 @@ void MOS6502::REL(MOS6502& cpu) {
 }
 
 void MOS6502::ABS(MOS6502& cpu) {
-    uint16_t address_low_byte = cpu.readMemory(cpu.program_counter_);
-    cpu.program_counter_++;
-    uint16_t address_high_byte = cpu.readMemory(cpu.program_counter_);
-    cpu.program_counter_++;
-
-    cpu.operand_address_ = (address_high_byte << 8) | address_low_byte;
+    cpu.operand_address_ = Pointer::SpecialMode::ABSOLUTE_ADDRESSING_MODE;
+    cpu.program_counter_ += 2;
 }
 
 void MOS6502::ABX(MOS6502& cpu) {

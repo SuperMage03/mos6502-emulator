@@ -1,5 +1,4 @@
 #include "json-test-harness.hpp"
-#include "mos6502.hpp"
 // Standard Library Includes
 #include <iostream>
 #include <fstream>
@@ -58,7 +57,7 @@ JSONTestHarness::Result JSONTestHarness::singleInstructionStep() {
         std::cout << "Unexpected Processor Status" << std::endl;
         return Result::TEST_FAILED;
     }
-    
+
     for (const auto& address_value_pair : cur_instruction_test_final["ram"]) {
         if (cpu_.readMemory(address_value_pair[0]) != address_value_pair[1]) {
             std::cout << "Unexpected Memory Value at " << address_value_pair[0] << std::endl;

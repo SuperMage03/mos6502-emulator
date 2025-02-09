@@ -1,7 +1,6 @@
 .DS_Store
 .vscode
-*.bin
-*.lst
 build
+bin-tests
 json-tests
 MOS6502-emulator

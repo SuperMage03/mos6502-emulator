@@ -115,22 +115,25 @@ private:
     // Class for mos6502 address pointer using similar idea as an iterator
     class Pointer {
     public:
-        enum class Register {
-            ACCUMULATOR,
+        enum class SpecialMode {
+            ACCUMULATOR, // Points to accumulator
+            ABSOLUTE_ADDRESSING_MODE, // Points to the address where it stores the target absolute address
         };
-    private:
-        MOS6502& cpu_;
-        std::variant<uint16_t, Register> location_to_point;
-        explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
-        explicit Pointer(MOS6502& cpu, const Register& target_register);
-    public:
-        const std::variant<uint16_t, Register>& get() const;
+        
+        uint16_t getAddress() const;
         void operator=(const uint16_t& virtual_address);
-        void operator=(const Register& target_register);
+        void operator=(const SpecialMode& speical_mode);
         uint8_t& operator*() const;
         Pointer& operator++();
         Pointer& operator+=(const int16_t& increment);
         friend class MOS6502;
+    
+    private:
+        MOS6502& cpu_;
+        uint16_t special_mode_value; // Needed for ABSOLUTE_ADDRESSING_MODE
+        std::variant<uint16_t, SpecialMode> location_to_point;
+        explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
+        explicit Pointer(MOS6502& cpu, const SpecialMode& target_register);
     };
 
     enum StatusFlag {

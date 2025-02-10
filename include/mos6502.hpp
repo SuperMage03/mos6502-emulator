@@ -31,9 +31,23 @@ public:
         uint8_t cycles;
     };
 
+    struct State {
+        uint16_t program_counter;
+        uint8_t stack_ptr;
+        uint8_t accumulator;
+        uint8_t x_reg;
+        uint8_t y_reg;
+        uint8_t processor_status;
+    };
+
     // Usage: Maps OPCODE to Instruction
     static const std::array<Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> instruction_lookup_table;
 
+    /**
+    * @brief  Constructor for MOS6502
+    * @param  None
+    * @return None
+    */
     MOS6502();
 
     /**
@@ -79,6 +93,27 @@ public:
     void nmi();
 
     /**
+    * @brief  Gets the total number of cycles ran
+    * @param  None
+    * @return Total number of cycles ran
+    */
+    uint64_t getCyclesElapsed() const;
+
+    /**
+    * @brief  Gets the current state of the CPU
+    * @param  None
+    * @return State of the CPU
+    */
+    State getState() const;
+
+    /**
+    * @brief  Sets the state of the CPU
+    * @param  new_state: New state of the CPU
+    * @return None
+    */
+    void setState(const State& new_state);
+
+    /**
     * @brief  Output the current CPU state
     * @param  out: The output stream
     * @return None
@@ -107,35 +142,30 @@ public:
     */
     uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
 
-    /**
-    * @brief  Sets Program Counter Manually
-    * @param  target_pc: New program counter value
-    * @return None
-    */
-    void setProgramCounter(const uint16_t& target_pc);
-
-    friend class JSONTestHarness;
-
 private:
     // Class for mos6502 address pointer using similar idea as an iterator
+    //   It can point to a virtual address or a register
     class Pointer {
     public:
         enum class Register {
             ACCUMULATOR,
         };
-    private:
-        MOS6502& cpu_;
-        std::variant<uint16_t, Register> location_to_point;
-        explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
-        explicit Pointer(MOS6502& cpu, const Register& target_register);
-    public:
+        // Gets the current target location that is being pointed to
         const std::variant<uint16_t, Register>& get() const;
+        // Operator Overloads
         void operator=(const uint16_t& virtual_address);
         void operator=(const Register& target_register);
         uint8_t& operator*() const;
         Pointer& operator++();
         Pointer& operator+=(const int16_t& increment);
+        // Friend Declarations
         friend class MOS6502;
+
+    private:
+        MOS6502& cpu_;
+        std::variant<uint16_t, Register> target_location_;
+        explicit Pointer(MOS6502& cpu, const uint16_t& virtual_address);
+        explicit Pointer(MOS6502& cpu, const Register& target_register);
     };
 
     enum class StatusFlag {
@@ -173,7 +203,7 @@ private:
     } processor_status_;
 
     // Emulator Variables
-    uint64_t total_cycle_ran_;
+    uint64_t cycles_elapsed_;
 
     // Variables needed for fetch->decode->execute cycle
     const Instruction* instruction_; // Current fetched instruction

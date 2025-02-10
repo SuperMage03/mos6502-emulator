@@ -7,30 +7,30 @@
 // ------------------------ MOS6502 Pointer Class ------------------------------
 
 MOS6502::Pointer::Pointer(MOS6502& cpu, const uint16_t& virtual_address): 
-    cpu_{cpu}, location_to_point{std::in_place_type<uint16_t>, virtual_address} {}
+    cpu_{cpu}, target_location_{std::in_place_type<uint16_t>, virtual_address} {}
 
 MOS6502::Pointer::Pointer(MOS6502& cpu, const MOS6502::Pointer::Register& target_register): 
-    cpu_{cpu}, location_to_point{std::in_place_type<MOS6502::Pointer::Register>, target_register} {}
+    cpu_{cpu}, target_location_{std::in_place_type<MOS6502::Pointer::Register>, target_register} {}
 
 const std::variant<uint16_t, MOS6502::Pointer::Register>& MOS6502::Pointer::get() const {
-    return location_to_point;
+    return target_location_;
 }
 
 void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
-    location_to_point = virtual_address;
+    target_location_ = virtual_address;
 }
 
 void MOS6502::Pointer::operator=(const MOS6502::Pointer::Register& target_register) {
-    location_to_point = target_register;
+    target_location_ = target_register;
 }
 
 uint8_t& MOS6502::Pointer::operator*() const {
     // Holds Virtual Memory Address
-    if (std::holds_alternative<uint16_t>(location_to_point)) {
-        return cpu_.getReferenceToMemory(std::get<uint16_t>(location_to_point));
+    if (std::holds_alternative<uint16_t>(target_location_)) {
+        return cpu_.getReferenceToMemory(std::get<uint16_t>(target_location_));
     }
     // Holds "Address" for Register
-    switch (std::get<MOS6502::Pointer::Register>(location_to_point)) {
+    switch (std::get<MOS6502::Pointer::Register>(target_location_)) {
         case MOS6502::Pointer::Register::ACCUMULATOR:
             return cpu_.accumulator_;
     }
@@ -42,8 +42,8 @@ MOS6502::Pointer& MOS6502::Pointer::operator++() {
 
 MOS6502::Pointer& MOS6502::Pointer::operator+=(const int16_t& increment) {
     // Holds Virtual Memory Address
-    if (std::holds_alternative<uint16_t>(location_to_point)) {
-        std::get<uint16_t>(location_to_point) += increment;
+    if (std::holds_alternative<uint16_t>(target_location_)) {
+        std::get<uint16_t>(target_location_) += increment;
     }
     return *this;
 }
@@ -72,7 +72,7 @@ const std::array<MOS6502::Instruction, MOS6502_NUMBER_OF_INSTRUCTIONS> MOS6502::
 
 MOS6502::MOS6502(): bus(nullptr), program_counter_(MOS6502_STARTING_PC_ADDRESS), stack_ptr_(0), accumulator_(0), 
                     x_reg_(0), y_reg_(0), processor_status_({.RAW_VALUE=0b00110110}),
-                    total_cycle_ran_(0), instruction_(nullptr), instruction_opcode_(0x00), 
+                    cycles_elapsed_(0), instruction_(nullptr), instruction_opcode_(0x00), 
                     instruction_cycle_remaining_(0), operand_address_(*this, 0x00), 
                     relative_addressing_offset_(0) {}
 
@@ -99,11 +99,11 @@ void MOS6502::runInstruction() {
         instruction_cycle_remaining_ += additional_cycles;
     }
     
-    total_cycle_ran_ += instruction_cycle_remaining_;
+    cycles_elapsed_ += instruction_cycle_remaining_;
 }
 
 void MOS6502::runCycle() {
-    total_cycle_ran_++;
+    cycles_elapsed_++;
 
     // Fetch a new instruction when the current instruction is done
     if (instruction_cycle_remaining_ == 0) {
@@ -143,7 +143,7 @@ void MOS6502::reset() {
     processor_status_.RAW_VALUE = 0b00110110;
 
     // Emulator Variables
-    total_cycle_ran_ = 0;
+    cycles_elapsed_ = 0;
 
     // Variables needed for fetch->decode->execute cycle
     instruction_ = nullptr;
@@ -197,6 +197,23 @@ void MOS6502::nmi() {
 
 // ------------------------ INTERNAL FUNCTIONS ---------------------------------
 
+uint64_t MOS6502::getCyclesElapsed() const {
+    return cycles_elapsed_;
+}
+
+MOS6502::State MOS6502::getState() const {
+    return State{program_counter_, stack_ptr_, accumulator_, x_reg_, y_reg_, processor_status_.RAW_VALUE};
+}
+
+void MOS6502::setState(const MOS6502::State& new_state) {
+    program_counter_ = new_state.program_counter;
+    stack_ptr_ = new_state.stack_ptr;
+    accumulator_ = new_state.accumulator;
+    x_reg_ = new_state.x_reg;
+    y_reg_ = new_state.y_reg;
+    processor_status_.RAW_VALUE = new_state.processor_status;
+}
+
 void MOS6502::outputCurrentState(std::ostream &out) const {
     out << std::hex;
     out << "Program Counter: 0x" << program_counter_ << std::endl;
@@ -206,7 +223,7 @@ void MOS6502::outputCurrentState(std::ostream &out) const {
     out << "Y Register     : 0x" << static_cast<uint16_t>(y_reg_) << std::endl;
     out << "Status Flags   : 0b" << std::bitset<8>(processor_status_.RAW_VALUE) << std::endl;
     out << std::dec;
-    out << "Cycles Elapsed : " << total_cycle_ran_ << std::endl;
+    out << "Cycles Elapsed : " << cycles_elapsed_ << std::endl;
 }
 
 uint8_t MOS6502::readMemory(const uint16_t& address) const {
@@ -219,10 +236,6 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
 
 uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
     return bus->getReferenceToMemory(virtual_address);
-}
-
-void MOS6502::setProgramCounter(const uint16_t& target_pc) {
-    program_counter_ = target_pc;
 }
 
 uint8_t MOS6502::getStatusFlag(const StatusFlag& flag) const {

@@ -18,8 +18,21 @@ public:
         ALL_TESTS_PASSED,
     };
 
+    /**
+    * @brief  Constructor for JSONTestHarness
+    * @param  cpu: Target CPU
+    * @param  file_path: Path to JSON File
+    * @return None
+    */
     JSONTestHarness(MOS6502& cpu, const std::string& file_path);
+
+    /**
+    * @brief  Executes a single instruction
+    * @param  None
+    * @return Result of the test
+    */
     Result singleInstructionStep();
+    
 private:
     uint32_t instructions_tested_;
     MOS6502& cpu_;

@@ -4,7 +4,7 @@
 // Project Headers
 #include "bus.hpp"
 #include "mos6502.hpp"
-#include "ram.hpp"
+#include "memory-unit.hpp"
 #include "json-test-harness.hpp"
 
 static std::string uint8_to_hex_string(const uint8_t& value) {
@@ -15,7 +15,7 @@ static std::string uint8_to_hex_string(const uint8_t& value) {
 
 int main(int argc, char *argv[]) {
     MOS6502 cpu;
-    RAM ram(65536); // 64kB for testing
+    MemoryUnit ram(65536); // 64kB for testing
     BUS bus(cpu, ram);
     
     for (unsigned int i = 0; i < MOS6502::instruction_lookup_table.size(); i++) {

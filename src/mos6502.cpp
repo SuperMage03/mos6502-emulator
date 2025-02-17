@@ -16,24 +16,37 @@ const std::variant<uint16_t, MOS6502::Pointer::Register>& MOS6502::Pointer::get(
     return target_location_;
 }
 
-void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
-    target_location_ = virtual_address;
-}
-
-void MOS6502::Pointer::operator=(const MOS6502::Pointer::Register& target_register) {
-    target_location_ = target_register;
-}
-
-uint8_t& MOS6502::Pointer::operator*() const {
+uint8_t MOS6502::Pointer::read() const {
     // Holds Virtual Memory Address
     if (std::holds_alternative<uint16_t>(target_location_)) {
-        return cpu_.getReferenceToMemory(std::get<uint16_t>(target_location_));
+        return cpu_.readMemory(std::get<uint16_t>(target_location_));
     }
     // Holds "Address" for Register
     switch (std::get<MOS6502::Pointer::Register>(target_location_)) {
         case MOS6502::Pointer::Register::ACCUMULATOR:
             return cpu_.accumulator_;
     }
+}
+
+void MOS6502::Pointer::write(const uint8_t& data) {
+    // Holds Virtual Memory Address
+    if (std::holds_alternative<uint16_t>(target_location_)) {
+        cpu_.writeMemory(std::get<uint16_t>(target_location_), data);
+        return;
+    }
+    // Holds "Address" for Register
+    switch (std::get<MOS6502::Pointer::Register>(target_location_)) {
+        case MOS6502::Pointer::Register::ACCUMULATOR:
+            cpu_.accumulator_ = data;
+    }
+}
+
+void MOS6502::Pointer::operator=(const uint16_t& virtual_address) {
+    target_location_ = virtual_address;
+}
+
+void MOS6502::Pointer::operator=(const MOS6502::Pointer::Register& target_register) {
+    target_location_ = target_register;
 }
 
 MOS6502::Pointer& MOS6502::Pointer::operator++() {
@@ -234,10 +247,6 @@ bool MOS6502::writeMemory(const uint16_t& address, const uint8_t& data) {
     return bus->writeBusData(address, data);
 }
 
-uint8_t& MOS6502::getReferenceToMemory(const uint16_t& virtual_address) {
-    return bus->getReferenceToMemory(virtual_address);
-}
-
 uint8_t MOS6502::getStatusFlag(const StatusFlag& flag) const {
     uint8_t bit_mask = (1 << static_cast<uint8_t>(flag));
     return (processor_status_.RAW_VALUE & bit_mask) > 0;
@@ -267,7 +276,7 @@ void MOS6502::stackPush(const uint8_t& data) {
 // ---------------------- INSTRUCTION IMPLEMENTATIONS --------------------------
 
 MOS6502::CycleType MOS6502::ADC(MOS6502& cpu) {
-    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(*cpu.operand_address_) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
+    uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + static_cast<uint16_t>(cpu.operand_address_.read()) + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 
 	// The carry flag out exists in the high byte bit 0
 	cpu.setStatusFlag(StatusFlag::CARRY, result > 0x00FF);
@@ -276,7 +285,7 @@ MOS6502::CycleType MOS6502::ADC(MOS6502& cpu) {
 	cpu.setStatusFlag(StatusFlag::ZERO, (result & 0x00FF) == 0);
 	
 	// The signed Overflow flag is set based on all that up there! :D
-	cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, (~(static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(*cpu.operand_address_)) & (static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(result))) & 0x0080);
+	cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, (~(static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(cpu.operand_address_.read())) & (static_cast<uint16_t>(cpu.accumulator_) ^ static_cast<uint16_t>(result))) & 0x0080);
 	
 	// The negative flag is set to the most significant bit of the result
 	cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
@@ -287,20 +296,20 @@ MOS6502::CycleType MOS6502::ADC(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::AND(MOS6502& cpu) {
-    cpu.accumulator_ &= *cpu.operand_address_;
+    cpu.accumulator_ &= cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0x00);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::ASL(MOS6502& cpu) {
-    uint8_t result = *cpu.operand_address_ << 0x01;
+    uint8_t result = cpu.operand_address_.read() << 0x01;
 
-    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
+    cpu.setStatusFlag(StatusFlag::CARRY, cpu.operand_address_.read() & 0x80);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0x00);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
 
-    *cpu.operand_address_ = result;
+    cpu.operand_address_.write(result);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -347,10 +356,10 @@ MOS6502::CycleType MOS6502::BEQ(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::BIT(MOS6502& cpu) {
-    uint8_t result = *cpu.operand_address_ & cpu.accumulator_;
+    uint8_t result = cpu.operand_address_.read() & cpu.accumulator_;
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0x00);
-    cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, *cpu.operand_address_ & 0x40);
-    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+    cpu.setStatusFlag(StatusFlag::OVERFLOW_FLAG, cpu.operand_address_.read() & 0x40);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.operand_address_.read() & 0x80);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -478,7 +487,7 @@ MOS6502::CycleType MOS6502::CLV(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::CMP(MOS6502& cpu) {
-    int16_t result = cpu.accumulator_ - *cpu.operand_address_;
+    int16_t result = cpu.accumulator_ - cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
@@ -486,7 +495,7 @@ MOS6502::CycleType MOS6502::CMP(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::CPX(MOS6502& cpu) {
-    int16_t result = cpu.x_reg_ - *cpu.operand_address_;
+    int16_t result = cpu.x_reg_ - cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
@@ -494,7 +503,7 @@ MOS6502::CycleType MOS6502::CPX(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::CPY(MOS6502& cpu) {
-    int16_t result = cpu.y_reg_ - *cpu.operand_address_;
+    int16_t result = cpu.y_reg_ - cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::CARRY, result >= 0);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x0080);
@@ -502,9 +511,9 @@ MOS6502::CycleType MOS6502::CPY(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::DEC(MOS6502& cpu) {
-    (*cpu.operand_address_)--;
-    cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
-    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+    cpu.operand_address_.write(cpu.operand_address_.read() - 1);
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.operand_address_.read() == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.operand_address_.read() & 0x80);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -523,16 +532,16 @@ MOS6502::CycleType MOS6502::DEY(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::EOR(MOS6502& cpu) {
-    cpu.accumulator_ ^= *cpu.operand_address_;
+    cpu.accumulator_ ^= cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::INC(MOS6502& cpu) {
-    (*cpu.operand_address_)++;
-    cpu.setStatusFlag(StatusFlag::ZERO, *cpu.operand_address_ == 0);
-    cpu.setStatusFlag(StatusFlag::NEGATIVE, *cpu.operand_address_ & 0x80);
+    cpu.operand_address_.write(cpu.operand_address_.read() + 1);
+    cpu.setStatusFlag(StatusFlag::ZERO, cpu.operand_address_.read() == 0);
+    cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.operand_address_.read() & 0x80);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -572,32 +581,32 @@ MOS6502::CycleType MOS6502::JSR(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::LDA(MOS6502& cpu) {
-    cpu.accumulator_ = *cpu.operand_address_;
+    cpu.accumulator_ = cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::LDX(MOS6502& cpu) {
-    cpu.x_reg_ = *cpu.operand_address_;
+    cpu.x_reg_ = cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.x_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.x_reg_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::LDY(MOS6502& cpu) {
-    cpu.y_reg_ = *cpu.operand_address_;
+    cpu.y_reg_ = cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.y_reg_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.y_reg_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::LSR(MOS6502& cpu) {
-    uint8_t result = *cpu.operand_address_ >> 1;
-    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
+    uint8_t result = cpu.operand_address_.read() >> 1;
+    cpu.setStatusFlag(StatusFlag::CARRY, cpu.operand_address_.read() & 0x01);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
-    *cpu.operand_address_ = result;
+    cpu.operand_address_.write(result);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -606,7 +615,7 @@ MOS6502::CycleType MOS6502::NOP(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::ORA(MOS6502& cpu) {
-    cpu.accumulator_ |= *cpu.operand_address_;
+    cpu.accumulator_ |= cpu.operand_address_.read();
     cpu.setStatusFlag(StatusFlag::ZERO, cpu.accumulator_ == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, cpu.accumulator_ & 0x80);
     return CycleType::ACCEPTS_ADDITIONAL_CYCLES;
@@ -641,20 +650,20 @@ MOS6502::CycleType MOS6502::PLP(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::ROL(MOS6502& cpu) {
-    uint8_t result = (*cpu.operand_address_ << 1) | cpu.getStatusFlag(StatusFlag::CARRY);
-    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x80);
+    uint8_t result = (cpu.operand_address_.read() << 1) | cpu.getStatusFlag(StatusFlag::CARRY);
+    cpu.setStatusFlag(StatusFlag::CARRY, cpu.operand_address_.read() & 0x80);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
-    *cpu.operand_address_ = result;
+    cpu.operand_address_.write(result);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::ROR(MOS6502& cpu) {
-    uint8_t result = (*cpu.operand_address_ >> 1) | (cpu.getStatusFlag(StatusFlag::CARRY) << 7);
-    cpu.setStatusFlag(StatusFlag::CARRY, *cpu.operand_address_ & 0x01);
+    uint8_t result = (cpu.operand_address_.read() >> 1) | (cpu.getStatusFlag(StatusFlag::CARRY) << 7);
+    cpu.setStatusFlag(StatusFlag::CARRY, cpu.operand_address_.read() & 0x01);
     cpu.setStatusFlag(StatusFlag::ZERO, result == 0);
     cpu.setStatusFlag(StatusFlag::NEGATIVE, result & 0x80);
-    *cpu.operand_address_ = result;
+    cpu.operand_address_.write(result);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
@@ -685,7 +694,7 @@ MOS6502::CycleType MOS6502::SBC(MOS6502& cpu) {
 	// Operating in 16-bit domain to capture carry out
 	
 	// We can invert the bottom 8 bits with bitwise xor
-	uint16_t inverted_operand = static_cast<uint16_t>(*cpu.operand_address_) ^ 0x00FF;
+	uint16_t inverted_operand = static_cast<uint16_t>(cpu.operand_address_.read()) ^ 0x00FF;
 	// Notice this is exactly the same as addition from here!
 	uint16_t result = static_cast<uint16_t>(cpu.accumulator_) + inverted_operand + static_cast<uint16_t>(cpu.getStatusFlag(StatusFlag::CARRY));
 	
@@ -714,17 +723,17 @@ MOS6502::CycleType MOS6502::SEI(MOS6502& cpu) {
 }
 
 MOS6502::CycleType MOS6502::STA(MOS6502& cpu) {
-    *cpu.operand_address_ = cpu.accumulator_;
+    cpu.operand_address_.write(cpu.accumulator_);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::STX(MOS6502& cpu) {
-    *cpu.operand_address_ = cpu.x_reg_;
+    cpu.operand_address_.write(cpu.x_reg_);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 
 MOS6502::CycleType MOS6502::STY(MOS6502& cpu) {
-    *cpu.operand_address_ = cpu.y_reg_;
+    cpu.operand_address_.write(cpu.y_reg_);
     return CycleType::NO_ADDITIONAL_CYCLES;
 }
 

@@ -135,13 +135,6 @@ public:
     */
     bool writeMemory(const uint16_t& address, const uint8_t& data);
 
-    /**
-    * @brief  returns a reference of the memory at the virtual memory address
-    * @param  virtual_address: The virtual memory address
-    * @return a reference of the memory at the virtual memory address
-    */
-    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
-
 private:
     // Class for mos6502 address pointer using similar idea as an iterator
     //   It can point to a virtual address or a register
@@ -152,10 +145,12 @@ private:
         };
         // Gets the current target location that is being pointed to
         const std::variant<uint16_t, Register>& get() const;
+        //Read Write Operations
+        uint8_t read() const;
+        void write(const uint8_t& data);
         // Operator Overloads
         void operator=(const uint16_t& virtual_address);
         void operator=(const Register& target_register);
-        uint8_t& operator*() const;
         Pointer& operator++();
         Pointer& operator+=(const int16_t& increment);
         // Friend Declarations

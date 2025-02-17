@@ -4,7 +4,7 @@
 #include <cstdint>
 // Project Headers
 #include "mos6502.hpp"
-#include "ram.hpp"
+#include "memory-unit.hpp"
 
 class BUS {
 public:
@@ -14,7 +14,7 @@ public:
     * @param  ram: RAM on the BUS
     * @return None
     */
-    BUS(MOS6502& cpu, RAM& ram);
+    BUS(MOS6502& cpu, MemoryUnit& ram);
 
     /**
     * @brief  Reads data from the bus at the address
@@ -31,16 +31,9 @@ public:
     */
     bool writeBusData(const uint16_t& address, const uint8_t& data);
 
-    /**
-    * @brief  returns a reference of the memory at the virtual memory address
-    * @param  virtual_address: The virtual memory address
-    * @return a reference of the memory at the virtual memory address
-    */
-    uint8_t& getReferenceToMemory(const uint16_t& virtual_address);
-
 private:
     MOS6502& cpu_;
-    RAM& ram_;
+    MemoryUnit& ram_;
 };
 
 #endif
